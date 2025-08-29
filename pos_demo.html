@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Terminal - Phase 1 Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pos-container {
+            background: white;
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 40px;
+        }
+
+        .demo-badge {
+            background: #ff7675;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 0.9em;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #2d3436;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #636e72;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            background: #00b894;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 30px;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .menu-button {
+            background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 25px 20px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 25px rgba(108, 92, 231, 0.3);
+        }
+
+        .menu-button:nth-child(2) {
+            background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
+            box-shadow: 0 8px 25px rgba(253, 121, 168, 0.3);
+        }
+
+        .menu-button:nth-child(3) {
+            background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+            box-shadow: 0 8px 25px rgba(253, 203, 110, 0.3);
+        }
+
+        .menu-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+
+        .menu-button .icon {
+            font-size: 2em;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .sample-data {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+
+        .sample-data h3 {
+            color: #2d3436;
+            margin-bottom: 15px;
+        }
+
+        .item-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .sample-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .sample-item:hover {
+            transform: scale(1.05);
+        }
+
+        .sample-item .name {
+            font-weight: 600;
+            color: #2d3436;
+            margin-bottom: 5px;
+        }
+
+        .sample-item .price {
+            color: #00b894;
+            font-weight: bold;
+        }
+
+        .cart-info {
+            background: #74b9ff;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .pos-container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .menu-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .item-list {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="pos-container">
+        <div class="header">
+            <div class="demo-badge">PHASE 1 DEMO</div>
+            <h1>🏪 Grocery POS Terminal</h1>
+            <p>Point of Sale System</p>
+            <div class="status">✅ System Ready</div>
+        </div>
+
+        <div class="cart-info">
+            🛒 Cart: <span id="cart-count">0</span> items | Total: $<span id="cart-total">0.00</span>
+        </div>
+
+        <div class="menu-grid">
+            <button class="menu-button" onclick="showItems()">
+                <span class="icon">📦</span>
+                Items
+            </button>
+            <button class="menu-button" onclick="showCart()">
+                <span class="icon">🛒</span>
+                Cart (<span id="cart-btn-count">0</span>)
+            </button>
+            <button class="menu-button" onclick="showSettings()">
+                <span class="icon">⚙️</span>
+                Settings
+            </button>
+        </div>
+
+        <div class="sample-data">
+            <h3>📋 Sample Items Available</h3>
+            <div class="item-list">
+                <div class="sample-item" onclick="addToCart('Apple', 2.50)">
+                    <div class="name">🍎 Apple</div>
+                    <div class="price">$2.50/kg</div>
+                </div>
+                <div class="sample-item" onclick="addToCart('Bread', 3.00)">
+                    <div class="name">🍞 Bread</div>
+                    <div class="price">$3.00/loaf</div>
+                </div>
+                <div class="sample-item" onclick="addToCart('Milk', 4.50)">
+                    <div class="name">🥛 Milk</div>
+                    <div class="price">$4.50/liter</div>
+                </div>
+                <div class="sample-item" onclick="addToCart('Banana', 1.80)">
+                    <div class="name">🍌 Banana</div>
+                    <div class="price">$1.80/kg</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cart = [];
+        let cartTotal = 0;
+
+        function addToCart(itemName, price) {
+            cart.push({ name: itemName, price: price });
+            cartTotal += price;
+            updateCartDisplay();
+            
+            // Show confirmation
+            alert(`Added ${itemName} to cart! Price: $${price.toFixed(2)}`);
+        }
+
+        function updateCartDisplay() {
+            document.getElementById('cart-count').textContent = cart.length;
+            document.getElementById('cart-btn-count').textContent = cart.length;
+            document.getElementById('cart-total').textContent = cartTotal.toFixed(2);
+        }
+
+        function showItems() {
+            alert('Items catalog would open here with categories:\n• Fruits\n• Bakery\n• Dairy\n• Vegetables\n\nClick on items below to add to cart!');
+        }
+
+        function showCart() {
+            if (cart.length === 0) {
+                alert('Cart is empty. Add some items first!');
+                return;
+            }
+            
+            let cartItems = cart.map(item => `• ${item.name}: $${item.price.toFixed(2)}`).join('\n');
+            alert(`🛒 Cart Contents:\n\n${cartItems}\n\nTotal: $${cartTotal.toFixed(2)}\n\nIn the full app, you can modify quantities and proceed to payment.`);
+        }
+
+        function showSettings() {
+            alert('Settings panel would include:\n• Bluetooth printer setup\n• Email configuration\n• Sync settings\n• Terminal ID: POS-001\n• Last sync: Just now');
+        }
+
+        // Simulate real-time updates
+        function simulateActivity() {
+            const statuses = ['System Ready', 'Syncing...', 'Connected', 'Online'];
+            const status = document.querySelector('.status');
+            const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+            status.textContent = `✅ ${randomStatus}`;
+        }
+
+        // Update status every 15 seconds
+        setInterval(simulateActivity, 15000);
+    </script>
+</body>
+</html>
