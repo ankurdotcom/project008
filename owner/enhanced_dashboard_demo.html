@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Grocery POS Owner Dashboard</title>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <!-- Google Identity Services and Drive API for direct user account integration -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .dashboard {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dashboard-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard-header h1 {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .google-auth-btn, .sync-btn {
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+        }
+
+        .google-auth-btn:hover, .sync-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+        }
+
+        .dashboard-nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 0 2rem;
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            padding: 1rem 1.5rem;
+            color: #666;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            color: #4285f4;
+            border-bottom-color: #4285f4;
+            background: rgba(66, 133, 244, 0.1);
+        }
+
+        .dashboard-content {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .stat-content h3 {
+            color: #666;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-change {
+            font-size: 0.8rem;
+            font-weight: 500;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .stat-change.positive {
+            color: #27ae60;
+            background: rgba(39, 174, 96, 0.1);
+        }
+
+        .charts-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            height: 400px;
+            position: relative;
+        }
+
+        .terminal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .terminal-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .terminal-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .terminal-card.online {
+            border-left: 4px solid #27ae60;
+        }
+
+        .terminal-card.offline {
+            border-left: 4px solid #e74c3c;
+        }
+
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .terminal-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat .label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .stat .value {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .terminal-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-indicator.online {
+            background: #27ae60;
+            box-shadow: 0 0 10px rgba(39, 174, 96, 0.5);
+        }
+
+        .status-indicator.offline {
+            background: #e74c3c;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+        }
+
+        .export-panel, .backup-panel, .settings-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            color: #2c3e50;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .export-controls {
+            display: flex;
+            gap: 1.5rem;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            font-weight: 500;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .control-group select, .control-group input {
+            padding: 0.75rem;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .export-btn, .backup-btn, .restore-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+        }
+
+        .backup-btn {
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+        }
+
+        .backup-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+        }
+
+        .restore-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .restore-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .backup-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 8px;
+        }
+
+        .info-item .label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .info-item .value {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .backup-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .settings-group {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .settings-group h4 {
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .setting-item label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 500;
+            color: #2c3e50;
+            cursor: pointer;
+        }
+
+        .setting-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #4285f4;
+        }
+
+        .setting-item input[type="number"] {
+            width: 80px;
+            padding: 0.5rem;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .dashboard-nav {
+                padding: 0 1rem;
+                overflow-x: auto;
+            }
+
+            .dashboard-content {
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .terminal-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .export-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .backup-actions {
+                flex-direction: column;
+            }
+
+            .setting-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .setting-item input[type="number"] {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <header class="dashboard-header">
+            <h1><i class="fas fa-shopping-cart"></i> Grocery Owner Dashboard</h1>
+            <div class="header-actions">
+                <button class="google-auth-btn" onclick="authenticateGoogle()">
+                    <i class="fas fa-cloud-upload-alt"></i> Connect Google Drive
+                </button>
+                <button class="sync-btn" onclick="syncData()">
+                    <i class="fas fa-sync"></i> Sync Now
+                </button>
+            </div>
+        </header>
+
+        <nav class="dashboard-nav">
+            <button class="nav-btn active" onclick="showTab('overview')">
+                <i class="fas fa-chart-line"></i> Overview
+            </button>
+            <button class="nav-btn" onclick="showTab('terminals')">
+                <i class="fas fa-desktop"></i> Terminals
+            </button>
+            <button class="nav-btn" onclick="showTab('export')">
+                <i class="fas fa-file-export"></i> Export
+            </button>
+            <button class="nav-btn" onclick="showTab('backup')">
+                <i class="fas fa-cloud-upload-alt"></i> Backup
+            </button>
+            <button class="nav-btn" onclick="showTab('settings')">
+                <i class="fas fa-cog"></i> Settings
+            </button>
+        </nav>
+
+        <main class="dashboard-content">
+            <!-- Overview Tab -->
+            <div id="overview-tab">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Total Sales</h3>
+                            <p class="stat-value">$12,450.75</p>
+                            <span class="stat-change positive">+12.5%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Today's Sales</h3>
+                            <p class="stat-value">$2,340.50</p>
+                            <span class="stat-change positive">+8.2%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Active Terminals</h3>
+                            <p class="stat-value">3</p>
+                            <span class="stat-change neutral">2 online</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Avg Transaction</h3>
+                            <p class="stat-value">$24.50</p>
+                            <span class="stat-change positive">+5.1%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-section">
+                    <div class="chart-container">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminals Tab -->
+            <div id="terminals-tab" class="hidden">
+                <div class="terminal-grid">
+                    <div class="terminal-card online">
+                        <div class="terminal-header">
+                            <i class="fas fa-desktop"></i>
+                            <span>Terminal 1 - Main Counter</span>
+                        </div>
+                        <div class="terminal-stats">
+                            <div class="stat">
+                                <span class="label">Sales Today:</span>
+                                <span class="value">$1,250.75</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">Transactions:</span>
+                                <span class="value">45</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">Last Sync:</span>
+                                <span class="value">2 min ago</span>
+                            </div>
+                        </div>
+                        <div class="terminal-status">
+                            <span class="status-indicator online"></span>
+                            ONLINE
+                        </div>
+                    </div>
+
+                    <div class="terminal-card online">
+                        <div class="terminal-header">
+                            <i class="fas fa-desktop"></i>
+                            <span>Terminal 2 - Express Lane</span>
+                        </div>
+                        <div class="terminal-stats">
+                            <div class="stat">
+                                <span class="label">Sales Today:</span>
+                                <span class="value">$890.25</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">Transactions:</span>
+                                <span class="value">32</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">Last Sync:</span>
+                                <span class="value">1 min ago</span>
+                            </div>
+                        </div>
+                        <div class="terminal-status">
+                            <span class="status-indicator online"></span>
+                            ONLINE
+                        </div>
+                    </div>
+
+                    <div class="terminal-card offline">
+                        <div class="terminal-header">
+                            <i class="fas fa-desktop"></i>
+                            <span>Terminal 3 - Self Checkout</span>
+                        </div>
+                        <div class="terminal-stats">
+                            <div class="stat">
+                                <span class="label">Sales Today:</span>
+                                <span class="value">$0.00</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">Transactions:</span>
+                                <span class="value">0</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">Last Sync:</span>
+                                <span class="value">1 hour ago</span>
+                            </div>
+                        </div>
+                        <div class="terminal-status">
+                            <span class="status-indicator offline"></span>
+                            OFFLINE
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Tab -->
+            <div id="export-tab" class="hidden">
+                <div class="export-panel">
+                    <div class="panel-header">
+                        <i class="fas fa-file-export"></i>
+                        <span>Export Data</span>
+                    </div>
+                    <div class="export-controls">
+                        <div class="control-group">
+                            <label>Format:</label>
+                            <select id="exportFormat">
+                                <option value="csv">CSV</option>
+                                <option value="pdf">PDF</option>
+                                <option value="xlsx">Excel</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label>Date Range:</label>
+                            <select id="exportRange">
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="year">This Year</option>
+                            </select>
+                        </div>
+                        <button class="export-btn" onclick="exportData()">
+                            <i class="fas fa-file-export"></i> Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backup Tab -->
+            <div id="backup-tab" class="hidden">
+                <div class="backup-panel">
+                    <div class="panel-header">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Backup & Recovery</span>
+                    </div>
+                    <div class="backup-info">
+                        <div class="info-item">
+                            <span class="label">Last Backup:</span>
+                            <span class="value" id="lastBackup">Never</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Status:</span>
+                            <span class="value" id="backupStatus">Ready</span>
+                        </div>
+                    </div>
+                    <div class="backup-actions">
+                        <button class="backup-btn" onclick="backupData()">
+                            <i class="fas fa-cloud-upload-alt"></i> Backup to Google Drive
+                        </button>
+                        <button class="restore-btn" onclick="restoreData()">
+                            <i class="fas fa-cloud-download-alt"></i> Restore from Google Drive
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings-tab" class="hidden">
+                <div class="settings-panel">
+                    <div class="panel-header">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </div>
+
+                    <div class="settings-group">
+                        <h4><i class="fas fa-sync"></i> Sync Settings</h4>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="autoSync" checked>
+                                Enable Auto Sync
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>Auto Sync Interval (minutes):</label>
+                            <input type="number" id="syncInterval" value="5" min="1" max="60">
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h4><i class="fas fa-shield-alt"></i> Security Settings</h4>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="encryption" checked>
+                                Enable Data Encryption
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>Session Timeout (hours):</label>
+                            <input type="number" id="sessionTimeout" value="8" min="1" max="24">
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h4><i class="fas fa-chart-line"></i> Analytics Settings</h4>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="realTimeUpdates" checked>
+                                Enable Real-time Updates
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>Chart Refresh Rate (seconds):</label>
+                            <input type="number" id="chartRefresh" value="30" min="5" max="300">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Global variables
+        let salesChart;
+        let googleAuth;
+        let isAuthenticated = false;
+        let googleAPIReady = false;
+        let accessToken = null;
+
+        // Initialize Google Identity Services and Drive API
+        function initGoogleAPI() {
+            return new Promise((resolve, reject) => {
+                // Check if Google Identity Services is loaded
+                if (typeof google !== 'undefined' && google.accounts) {
+                    // Initialize Google Identity Services
+                    googleAuth = google.accounts.oauth2.initTokenClient({
+                        client_id: 'YOUR_CLIENT_ID.apps.googleusercontent.com', // This will be configured in production
+                        scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata.readonly',
+                        callback: (tokenResponse) => {
+                            if (tokenResponse && tokenResponse.access_token) {
+                                accessToken = tokenResponse.access_token;
+                                isAuthenticated = true;
+                                googleAPIReady = true;
+                                console.log('Google authentication successful');
+                                
+                                // Update UI
+                                const googleBtn = document.querySelector('.google-auth-btn');
+                                googleBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Google Drive Connected';
+                                googleBtn.style.background = 'linear-gradient(135deg, #34a853 0%, #4285f4 100%)';
+                                
+                                // Initialize Google API client
+                                gapi.load('client', async () => {
+                                    await gapi.client.init({
+                                        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+                                    });
+                                    gapi.client.setToken({ access_token: accessToken });
+                                    resolve(true);
+                                });
+                            } else {
+                                console.error('Google authentication failed');
+                                resolve(false);
+                            }
+                        },
+                    });
+                    resolve(true);
+                } else {
+                    console.warn('Google Identity Services not loaded. Running in demo mode.');
+                    resolve(false);
+                }
+            });
+        }
+
+        function authenticateGoogle() {
+            if (!googleAuth) {
+                alert('Google Identity Services not available. This is running in demo mode.\n\nTo enable full Google Drive integration:\n1. Set up OAuth2 credentials in Google Cloud Console\n2. Configure the client ID in the application\n3. Deploy the app with proper HTTPS\n\nFor now, all Google Drive features will work in simulation mode.');
+                return;
+            }
+
+            // Request access token
+            googleAuth.requestAccessToken();
+        }
+
+        function syncData() {
+            alert('Data synchronization with POS terminals would be implemented here\n\nThis would:\n- Check network connectivity\n- Sync pending transactions\n- Update terminal status\n- Handle conflict resolution');
+        }
+
+        function exportData() {
+            const format = document.getElementById('exportFormat').value;
+            const range = document.getElementById('exportRange').value;
+
+            // Mock export functionality
+            alert(`Exporting ${range} data in ${format.toUpperCase()} format\n\nThis would:\n- Generate ${format} file\n- Apply date range filters\n- Include sales data and analytics\n- Download file to user device`);
+
+            // Simulate download
+            const data = {
+                format: format,
+                dateRange: range,
+                timestamp: new Date().toISOString(),
+                totalSales: '$12,450.75',
+                transactions: 245,
+                terminals: 3
+            };
+
+            console.log('Export data:', data);
+        }
+
+        function backupData() {
+            if (!isAuthenticated || !googleAPIReady) {
+                if (!googleAuth) {
+                    alert('Google Drive integration not available. Running in demo mode.\n\nTo enable real backup:\n1. Configure OAuth2 client ID\n2. User must authenticate with Google\n3. Grant Drive permissions\n\nFor now, simulating backup process...');
+                } else {
+                    alert('Please connect to Google Drive first by clicking the "Connect Google Drive" button.');
+                    return;
+                }
+            }
+
+            document.getElementById('backupStatus').textContent = 'Backing up...';
+            document.getElementById('backupStatus').style.color = '#f39c12';
+
+            if (isAuthenticated && googleAPIReady) {
+                // Real Google Drive backup
+                performRealBackup();
+            } else {
+                // Demo mode backup
+                performDemoBackup();
+            }
+        }
+
+        async function performRealBackup() {
+            try {
+                // Prepare sales data for backup
+                const salesData = {
+                    timestamp: new Date().toISOString(),
+                    totalSales: '$12,450.75',
+                    transactions: 245,
+                    terminals: 3,
+                    dailySales: [1200, 1500, 1800, 1400, 1600, 2100, 1900],
+                    terminalData: [
+                        { id: 1, name: 'Main Counter', sales: 1250.75, transactions: 45 },
+                        { id: 2, name: 'Express Lane', sales: 890.25, transactions: 32 },
+                        { id: 3, name: 'Self Checkout', sales: 0.00, transactions: 0 }
+                    ]
+                };
+
+                // Create JSON file content
+                const fileContent = JSON.stringify(salesData, null, 2);
+                const file = new Blob([fileContent], { type: 'application/json' });
+
+                // Create file metadata
+                const metadata = {
+                    name: `pos-sales-backup-${new Date().toISOString().split('T')[0]}.json`,
+                    mimeType: 'application/json',
+                    parents: ['root'] // Save to root directory
+                };
+
+                // Upload to Google Drive
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                form.append('file', file);
+
+                const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: form
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Backup successful:', result);
+                    
+                    document.getElementById('backupStatus').textContent = 'Success';
+                    document.getElementById('backupStatus').style.color = '#27ae60';
+                    document.getElementById('lastBackup').textContent = new Date().toLocaleString();
+                    
+                    alert(`Backup completed successfully!\n\nFile saved to your Google Drive:\n${metadata.name}\n\nFile ID: ${result.id}`);
+                } else {
+                    throw new Error(`Upload failed: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Backup failed:', error);
+                document.getElementById('backupStatus').textContent = 'Failed';
+                document.getElementById('backupStatus').style.color = '#e74c3c';
+                alert('Backup failed. Please check your connection and try again.');
+            }
+        }
+
+        function performDemoBackup() {
+            // Simulate backup process
+            setTimeout(() => {
+                document.getElementById('backupStatus').textContent = 'Success';
+                document.getElementById('backupStatus').style.color = '#27ae60';
+                document.getElementById('lastBackup').textContent = new Date().toLocaleString();
+
+                alert('Demo Backup completed successfully!\n\nIn production, this would:\n- Encrypt your sales data\n- Upload to your Google Drive\n- Create backup metadata\n- Update backup history\n\nNo real data was uploaded in demo mode.');
+            }, 2000);
+        }
+
+        function restoreData() {
+            if (!isAuthenticated || !googleAPIReady) {
+                if (!googleAuth) {
+                    alert('Google Drive integration not available. Running in demo mode.\n\nTo enable real restore:\n1. Configure OAuth2 client ID\n2. User must authenticate with Google\n3. Grant Drive permissions\n\nFor now, simulating restore process...');
+                } else {
+                    alert('Please connect to Google Drive first by clicking the "Connect Google Drive" button.');
+                    return;
+                }
+            }
+
+            if (isAuthenticated && googleAPIReady) {
+                // Real Google Drive restore
+                performRealRestore();
+            } else {
+                // Demo mode restore
+                performDemoRestore();
+            }
+        }
+
+        async function performRealRestore() {
+            try {
+                // List backup files from Google Drive
+                const response = await fetch('https://www.googleapis.com/drive/v3/files?q=name contains "pos-sales-backup" and mimeType="application/json"&orderBy=modifiedTime desc', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to list files: ${response.status}`);
+                }
+
+                const files = await response.json();
+                
+                if (files.files.length === 0) {
+                    alert('No backup files found in your Google Drive.');
+                    return;
+                }
+
+                // Use the most recent backup
+                const latestBackup = files.files[0];
+                console.log('Restoring from:', latestBackup.name);
+
+                // Download the backup file
+                const downloadResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${latestBackup.id}?alt=media`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!downloadResponse.ok) {
+                    throw new Error(`Failed to download file: ${downloadResponse.status}`);
+                }
+
+                const backupData = await downloadResponse.json();
+                console.log('Backup data restored:', backupData);
+
+                // Update dashboard with restored data
+                if (backupData.dailySales && salesChart) {
+                    salesChart.data.datasets[0].data = backupData.dailySales;
+                    salesChart.update();
+                }
+
+                if (backupData.totalSales) {
+                    const totalElement = document.querySelector('.stat-value');
+                    if (totalElement) {
+                        totalElement.textContent = backupData.totalSales;
+                    }
+                }
+
+                alert(`Data restored successfully from:\n${latestBackup.name}\n\nRestored ${backupData.transactions || 0} transactions and ${backupData.terminals || 0} terminals data.`);
+
+            } catch (error) {
+                console.error('Restore failed:', error);
+                alert('Restore failed. Please check your connection and try again.');
+            }
+        }
+
+        function performDemoRestore() {
+            alert('Demo Restore initiated!\n\nIn production, this would:\n- List available backup files from your Google Drive\n- Download the selected backup\n- Validate data integrity\n- Restore to local database\n- Update dashboard with restored data\n\nNo real data was downloaded in demo mode.');
+        }
+
+        // Chart initialization
+        function initChart() {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            salesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Sales ($)',
+                        data: [1200, 1500, 1800, 1400, 1600, 2100, 1900],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Weekly Sales Trend'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Tab switching functionality
+        function showTab(tabName) {
+            // Hide all tabs
+            const tabs = ['overview', 'terminals', 'export', 'backup', 'settings'];
+            tabs.forEach(tab => {
+                const tabElement = document.getElementById(tab + '-tab');
+                if (tabElement) {
+                    tabElement.classList.add('hidden');
+                }
+            });
+
+            // Remove active class from all nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            const selectedTab = document.getElementById(tabName + '-tab');
+            if (selectedTab) {
+                selectedTab.classList.remove('hidden');
+            }
+
+            // Add active class to clicked button
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+        }
+
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Initializing Grocery POS Owner Dashboard...');
+
+            // Initialize chart
+            initChart();
+
+            // Initialize Google Identity Services (with error handling)
+            try {
+                await initGoogleAPI();
+            } catch (error) {
+                console.error('Google Identity Services initialization failed:', error);
+                googleAPIReady = false;
+            }
+
+            // Update UI based on Google API status
+            if (!googleAPIReady || !googleAuth) {
+                const googleBtn = document.querySelector('.google-auth-btn');
+                if (googleBtn) {
+                    googleBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Google Drive (Demo Mode)';
+                    googleBtn.title = 'Google Identity Services not configured - running in demo mode';
+                }
+            }
+
+            // Simulate real-time updates
+            setInterval(() => {
+                const realTimeCheckbox = document.getElementById('realTimeUpdates');
+                if (realTimeCheckbox && realTimeCheckbox.checked && salesChart) {
+                    // Update chart with new simulated data
+                    const newData = salesChart.data.datasets[0].data.map(val =>
+                        Math.max(800, val + (Math.random() - 0.5) * 200)
+                    );
+                    salesChart.data.datasets[0].data = newData;
+                    salesChart.update();
+
+                    // Update sales total
+                    const totalSales = newData.reduce((sum, val) => sum + val, 0);
+                    const totalElement = document.querySelector('.stat-value');
+                    if (totalElement) {
+                        totalElement.textContent = `$${totalSales.toFixed(2)}`;
+                    }
+                }
+            }, 30000); // Update every 30 seconds
+
+            console.log('Dashboard initialization complete');
+        });
+
+        // Handle Google API load errors gracefully
+        window.addEventListener('error', function(e) {
+            if (e.error && e.error.message && e.error.message.includes('gapi')) {
+                console.warn('Google API error caught:', e.error);
+                googleAPIReady = false;
+            }
+        });
+
+        // Handle unhandled promise rejections from Google API
+        window.addEventListener('unhandledrejection', function(e) {
+            if (e.reason && e.reason.message && e.reason.message.includes('gapi')) {
+                console.warn('Google API promise rejection caught:', e.reason);
+                googleAPIReady = false;
+                e.preventDefault(); // Prevent the error from being logged
+            }
+        });
+    </script>
+</body>
+</html>
