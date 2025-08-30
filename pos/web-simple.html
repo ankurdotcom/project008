@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grocery POS System</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #2196F3; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; }
+        .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; }
+        .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+        .item-card { background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; }
+        .item-card:hover { transform: translateY(-2px); }
+        .cart { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #eee; }
+        .btn { background: #4CAF50; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+        .btn:hover { background: #45a049; }
+        .btn-danger { background: #f44336; }
+        .btn-danger:hover { background: #da190b; }
+        .total { font-size: 1.2rem; font-weight: bold; margin-top: 1rem; }
+        .payment { background: white; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; }
+        .input { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; margin: 0.5rem 0; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Sample grocery items
+        const GROCERY_ITEMS = [
+            { id: '1', name: 'Apple', price: 2.50, category: 'Fruits', unit: 'kg' },
+            { id: '2', name: 'Bread', price: 3.00, category: 'Bakery', unit: 'loaf' },
+            { id: '3', name: 'Milk', price: 4.50, category: 'Dairy', unit: 'liter' },
+            { id: '4', name: 'Banana', price: 1.20, category: 'Fruits', unit: 'kg' },
+            { id: '5', name: 'Cheese', price: 5.00, category: 'Dairy', unit: 'kg' },
+            { id: '6', name: 'Orange', price: 3.50, category: 'Fruits', unit: 'kg' },
+            { id: '7', name: 'Yogurt', price: 2.00, category: 'Dairy', unit: 'cup' },
+            { id: '8', name: 'Croissant', price: 1.50, category: 'Bakery', unit: 'piece' }
+        ];
+
+        function GroceryPOS() {
+            const [cart, setCart] = useState([]);
+            const [cashAmount, setCashAmount] = useState('');
+            const [showPayment, setShowPayment] = useState(false);
+
+            const addToCart = (item) => {
+                setCart(prevCart => {
+                    const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
+                    if (existingItem) {
+                        return prevCart.map(cartItem =>
+                            cartItem.id === item.id
+                                ? { ...cartItem, quantity: cartItem.quantity + 1 }
+                                : cartItem
+                        );
+                    }
+                    return [...prevCart, { ...item, quantity: 1 }];
+                });
+            };
+
+            const removeFromCart = (itemId) => {
+                setCart(prevCart => prevCart.filter(item => item.id !== itemId));
+            };
+
+            const updateQuantity = (itemId, newQuantity) => {
+                if (newQuantity <= 0) {
+                    removeFromCart(itemId);
+                    return;
+                }
+                setCart(prevCart =>
+                    prevCart.map(item =>
+                        item.id === itemId ? { ...item, quantity: newQuantity } : item
+                    )
+                );
+            };
+
+            const getTotal = () => {
+                return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+            };
+
+            const processPayment = () => {
+                const total = getTotal();
+                const cash = parseFloat(cashAmount);
+                
+                if (cash < total) {
+                    alert('Insufficient cash amount!');
+                    return;
+                }
+
+                const change = cash - total;
+                alert(`Payment successful!\nTotal: $${total.toFixed(2)}\nCash: $${cash.toFixed(2)}\nChange: $${change.toFixed(2)}\n\n--- RECEIPT ---\n${cart.map(item => `${item.name} x${item.quantity} = $${(item.price * item.quantity).toFixed(2)}`).join('\n')}\n\nThank you for shopping!`);
+                
+                // Clear cart and reset
+                setCart([]);
+                setCashAmount('');
+                setShowPayment(false);
+            };
+
+            const clearCart = () => {
+                setCart([]);
+                setShowPayment(false);
+            };
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <h1>🛒 Grocery POS System</h1>
+                        <p>Professional Point of Sale for Grocery Store</p>
+                    </div>
+
+                    <div className="grid">
+                        <div>
+                            <h2>Available Items</h2>
+                            <div className="items-grid">
+                                {GROCERY_ITEMS.map(item => (
+                                    <div key={item.id} className="item-card" onClick={() => addToCart(item)}>
+                                        <h3>{item.name}</h3>
+                                        <p>Category: {item.category}</p>
+                                        <p><strong>${item.price.toFixed(2)} / {item.unit}</strong></p>
+                                        <button className="btn">Add to Cart</button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="cart">
+                                <h2>Shopping Cart ({cart.length} items)</h2>
+                                {cart.length === 0 ? (
+                                    <p>Cart is empty</p>
+                                ) : (
+                                    <>
+                                        {cart.map(item => (
+                                            <div key={item.id} className="cart-item">
+                                                <div>
+                                                    <strong>{item.name}</strong><br/>
+                                                    ${item.price.toFixed(2)} / {item.unit}
+                                                </div>
+                                                <div>
+                                                    <input 
+                                                        type="number" 
+                                                        value={item.quantity} 
+                                                        onChange={(e) => updateQuantity(item.id, parseInt(e.target.value))}
+                                                        style={{width: '60px', marginRight: '10px'}}
+                                                        min="0"
+                                                    />
+                                                    <button 
+                                                        className="btn btn-danger" 
+                                                        onClick={() => removeFromCart(item.id)}
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        
+                                        <div className="total">
+                                            Total: ${getTotal().toFixed(2)}
+                                        </div>
+
+                                        <div style={{marginTop: '1rem'}}>
+                                            <button 
+                                                className="btn" 
+                                                onClick={() => setShowPayment(!showPayment)}
+                                                style={{marginRight: '10px'}}
+                                            >
+                                                {showPayment ? 'Hide Payment' : 'Proceed to Payment'}
+                                            </button>
+                                            <button className="btn btn-danger" onClick={clearCart}>
+                                                Clear Cart
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            {showPayment && cart.length > 0 && (
+                                <div className="payment">
+                                    <h3>Payment</h3>
+                                    <p><strong>Total Amount: ${getTotal().toFixed(2)}</strong></p>
+                                    <input 
+                                        type="number" 
+                                        className="input"
+                                        placeholder="Enter cash amount"
+                                        value={cashAmount}
+                                        onChange={(e) => setCashAmount(e.target.value)}
+                                        step="0.01"
+                                        min="0"
+                                    />
+                                    {cashAmount && (
+                                        <p>Change: ${Math.max(0, parseFloat(cashAmount) - getTotal()).toFixed(2)}</p>
+                                    )}
+                                    <button className="btn" onClick={processPayment}>
+                                        Process Payment & Print Receipt
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<GroceryPOS />, document.getElementById('root'));
+    </script>
+</body>
+</html>
