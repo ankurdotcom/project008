@@ -1,0 +1,55 @@
+{
+  "name": "Grocery POS Owner Dashboard",
+  "short_name": "POS Dashboard",
+  "description": "Advanced POS management with offline backup capabilities",
+  "start_url": "/enhanced_dashboard_demo.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2196f3",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity"],
+  "lang": "en-US",
+  "icons": [
+    {
+      "src": "icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/enhanced_dashboard_demo.html",
+      "accept": {
+        "application/json": [".json"],
+        "text/csv": [".csv"]
+      }
+    }
+  ],
+  "permissions": [
+    "storage",
+    "background-sync"
+  ],
+  "shortcuts": [
+    {
+      "name": "Backup Data",
+      "short_name": "Backup",
+      "description": "Quick backup to local storage",
+      "url": "/enhanced_dashboard_demo.html#backup",
+      "icons": [{ "src": "icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "View Terminals",
+      "short_name": "Terminals",
+      "description": "Check terminal status",
+      "url": "/enhanced_dashboard_demo.html#terminals",
+      "icons": [{ "src": "icon-192.svg", "sizes": "192x192" }]
+    }
+  ]
+}
