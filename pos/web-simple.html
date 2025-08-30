@@ -21,26 +21,63 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Grocery POS System</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="indexeddb-manager.js?v=1.2"></script>
+    <script src="lib/react.development.js"></script>
+    <script src="lib/react-dom.development.js"></script>
+    <script src="lib/babel.min.js"></script>
+    <script src="indexeddb-manager.js?v=1.3"></script>
 
-    <!-- Fallback for external dependencies -->
+    <!-- CDN Fallback for external dependencies -->
     <script>
-        // Check if external dependencies loaded successfully
+        // Fallback loader for incognito/private browsing mode
         window.addEventListener('load', function() {
-            const checkDependencies = () => {
-                const errors = [];
+            const loadFallback = (url, localPath, globalVar) => {
+                return new Promise((resolve, reject) => {
+                    if (window[globalVar]) {
+                        resolve(); // Already loaded
+                        return;
+                    }
 
+                    const script = document.createElement('script');
+                    script.src = url;
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+            };
+
+            const checkDependencies = async () => {
+                const errors = [];
+                let loadedFromCDN = false;
+
+                // Check if local files loaded
                 if (typeof React === 'undefined') {
-                    errors.push('React');
+                    console.log('🔄 React not loaded locally, trying CDN...');
+                    try {
+                        await loadFallback('https://unpkg.com/react@18/umd/react.development.js', 'lib/react.development.js', 'React');
+                        loadedFromCDN = true;
+                    } catch (e) {
+                        errors.push('React');
+                    }
                 }
+
                 if (typeof ReactDOM === 'undefined') {
-                    errors.push('ReactDOM');
+                    console.log('🔄 ReactDOM not loaded locally, trying CDN...');
+                    try {
+                        await loadFallback('https://unpkg.com/react-dom@18/umd/react-dom.development.js', 'lib/react-dom.development.js', 'ReactDOM');
+                        loadedFromCDN = true;
+                    } catch (e) {
+                        errors.push('ReactDOM');
+                    }
                 }
+
                 if (typeof Babel === 'undefined') {
-                    errors.push('Babel');
+                    console.log('🔄 Babel not loaded locally, trying CDN...');
+                    try {
+                        await loadFallback('https://unpkg.com/@babel/standalone/babel.min.js', 'lib/babel.min.js', 'Babel');
+                        loadedFromCDN = true;
+                    } catch (e) {
+                        errors.push('Babel');
+                    }
                 }
 
                 if (errors.length > 0) {
@@ -50,12 +87,21 @@
                     // Show fallback UI
                     showFallbackMode(errors);
                 } else {
-                    console.log('✅ All external dependencies loaded successfully');
+                    if (loadedFromCDN) {
+                        console.log('✅ Dependencies loaded from CDN fallback');
+                    } else {
+                        console.log('✅ All dependencies loaded from local files');
+                    }
+
+                    // Re-render the app if it was waiting for dependencies
+                    if (window.pendingRender) {
+                        window.pendingRender();
+                    }
                 }
             };
 
-            // Small delay to ensure scripts have time to load/fail
-            setTimeout(checkDependencies, 1000);
+            // Small delay to ensure local scripts have time to load/fail
+            setTimeout(checkDependencies, 500);
         });
 
         function showFallbackMode(missingDeps) {
@@ -1333,39 +1379,51 @@
 
         // Test if React is loaded and render the component
         console.log('🔧 Testing React availability...');
-        if (typeof React !== 'undefined' && typeof ReactDOM !== 'undefined') {
-            console.log('✅ React and ReactDOM are available');
-            try {
-                // Use createRoot for React 18+ compatibility
-                const rootElement = document.getElementById('root');
-                if (ReactDOM.createRoot) {
-                    const root = ReactDOM.createRoot(rootElement);
-                    root.render(<GroceryPOS />);
-                } else {
-                    // Fallback for older React versions
-                    ReactDOM.render(<GroceryPOS />, rootElement);
+
+        function renderApp() {
+            if (typeof React !== 'undefined' && typeof ReactDOM !== 'undefined') {
+                console.log('✅ React and ReactDOM are available');
+                try {
+                    // Use createRoot for React 18+ compatibility
+                    const rootElement = document.getElementById('root');
+                    if (ReactDOM.createRoot) {
+                        const root = ReactDOM.createRoot(rootElement);
+                        root.render(<GroceryPOS />);
+                    } else {
+                        // Fallback for older React versions
+                        ReactDOM.render(<GroceryPOS />, rootElement);
+                    }
+                    console.log('✅ Application rendered successfully');
+                } catch (error) {
+                    console.error('❌ Error rendering application:', error);
+                    document.getElementById('root').innerHTML = `
+                        <div style="text-align: center; padding: 2rem; font-family: Arial, sans-serif; color: #f44336;">
+                            <h1>❌ Application Failed to Load</h1>
+                            <p><strong>Error:</strong> ${error.message}</p>
+                            <p>Please check the browser console for more details.</p>
+                            <button onclick="window.location.reload()" style="padding: 0.5rem 1rem; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">🔄 Reload</button>
+                        </div>
+                    `;
                 }
-                console.log('✅ Application rendered successfully');
-            } catch (error) {
-                console.error('❌ Error rendering application:', error);
+            } else {
+                console.error('❌ React or ReactDOM not available');
                 document.getElementById('root').innerHTML = `
                     <div style="text-align: center; padding: 2rem; font-family: Arial, sans-serif; color: #f44336;">
-                        <h1>❌ Application Failed to Load</h1>
-                        <p><strong>Error:</strong> ${error.message}</p>
-                        <p>Please check the browser console for more details.</p>
+                        <h1>❌ React Not Loaded</h1>
+                        <p>React libraries failed to load. Please check your internet connection and try again.</p>
                         <button onclick="window.location.reload()" style="padding: 0.5rem 1rem; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">🔄 Reload</button>
                     </div>
                 `;
             }
+        }
+
+        // Try to render immediately, or store for later if dependencies aren't ready
+        if (typeof React !== 'undefined' && typeof ReactDOM !== 'undefined') {
+            renderApp();
         } else {
-            console.error('❌ React or ReactDOM not available');
-            document.getElementById('root').innerHTML = `
-                <div style="text-align: center; padding: 2rem; font-family: Arial, sans-serif; color: #f44336;">
-                    <h1>❌ React Not Loaded</h1>
-                    <p>React libraries failed to load. Please check your internet connection and try again.</p>
-                    <button onclick="window.location.reload()" style="padding: 0.5rem 1rem; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">🔄 Reload</button>
-                </div>
-            `;
+            // Store render function for when dependencies load
+            window.pendingRender = renderApp;
+            console.log('⏳ Waiting for dependencies to load...');
         }
     </script>
 </body>

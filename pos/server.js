@@ -14,7 +14,7 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com", "'unsafe-eval'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "https:"],
             connectSrc: ["'self'", "http://localhost:9090"],
@@ -61,6 +61,13 @@ app.use('/indexeddb-manager.js', (req, res, next) => {
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
+    next();
+});
+
+// Cache control middleware for local library files
+app.use('/lib/', (req, res, next) => {
+    // Allow caching of local library files for better performance
+    res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
     next();
 });
 

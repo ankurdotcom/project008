@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Test</title>
+</head>
+<body>
+    <h1>Testing Local Libraries</h1>
+    <div id="test-output"></div>
+
+    <script src="lib/react.development.js"></script>
+    <script src="lib/react-dom.development.js"></script>
+    <script src="lib/babel.min.js"></script>
+
+    <script type="text/babel">
+        const TestComponent = () => {
+            return React.createElement('div', null,
+                React.createElement('h2', null, '✅ React is working!'),
+                React.createElement('p', null, 'Version: ' + React.version),
+                React.createElement('p', null, 'ReactDOM available: ' + (typeof ReactDOM !== 'undefined')),
+                React.createElement('p', null, 'Babel available: ' + (typeof Babel !== 'undefined'))
+            );
+        };
+
+        const root = document.getElementById('test-output');
+        if (ReactDOM.createRoot) {
+            const reactRoot = ReactDOM.createRoot(root);
+            reactRoot.render(React.createElement(TestComponent));
+        } else {
+            ReactDOM.render(React.createElement(TestComponent), root);
+        }
+    </script>
+</body>
+</html>

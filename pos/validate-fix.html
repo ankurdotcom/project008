@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module Error Fix Validation</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .test-result { padding: 1rem; margin: 1rem 0; border-radius: 8px; }
+        .success { background: #e8f5e8; color: #2e7d32; border: 1px solid #4caf50; }
+        .error { background: #ffebee; color: #c62828; border: 1px solid #f44336; }
+        .warning { background: #fff3e0; color: #f57c00; border: 1px solid #ff9800; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Module Error Fix Validation</h1>
+    <div id="test-results"></div>
+
+    <script src="lib/react.development.js"></script>
+    <script src="lib/react-dom.development.js"></script>
+    <script src="lib/babel.min.js"></script>
+    <script src="indexeddb-manager.js?v=1.3"></script>
+
+    <script>
+        const results = document.getElementById('test-results');
+
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${type.toUpperCase()}:</strong> ${message}`;
+            results.appendChild(div);
+        }
+
+        // Test 1: Check if React libraries loaded
+        if (typeof React !== 'undefined') {
+            addResult('✅ React library loaded successfully', 'success');
+        } else {
+            addResult('❌ React library failed to load', 'error');
+        }
+
+        if (typeof ReactDOM !== 'undefined') {
+            addResult('✅ ReactDOM library loaded successfully', 'success');
+        } else {
+            addResult('❌ ReactDOM library failed to load', 'error');
+        }
+
+        if (typeof Babel !== 'undefined') {
+            addResult('✅ Babel library loaded successfully', 'success');
+        } else {
+            addResult('❌ Babel library failed to load', 'error');
+        }
+
+        // Test 2: Check if IndexedDB Manager loaded
+        if (typeof window.indexedDBManager !== 'undefined') {
+            addResult('✅ IndexedDB Manager loaded successfully', 'success');
+
+            // Test 3: Check if IndexedDB Manager has expected methods
+            const manager = window.indexedDBManager;
+            const expectedMethods = ['init', 'storeSale', 'getAllSales', 'getSalesStats'];
+
+            expectedMethods.forEach(method => {
+                if (typeof manager[method] === 'function') {
+                    addResult(`✅ IndexedDB Manager has ${method} method`, 'success');
+                } else {
+                    addResult(`❌ IndexedDB Manager missing ${method} method`, 'error');
+                }
+            });
+
+        } else {
+            addResult('❌ IndexedDB Manager failed to load - THIS IS THE ORIGINAL ERROR!', 'error');
+        }
+
+        // Test 4: Check for any JavaScript errors
+        window.addEventListener('error', function(e) {
+            addResult(`❌ JavaScript Error: ${e.message}`, 'error');
+        });
+
+        // Test 5: Check if we can initialize IndexedDB (async test)
+        setTimeout(async () => {
+            if (window.indexedDBManager) {
+                try {
+                    await window.indexedDBManager.init();
+                    addResult('✅ IndexedDB initialization successful', 'success');
+                } catch (error) {
+                    addResult(`❌ IndexedDB initialization failed: ${error.message}`, 'error');
+                }
+            }
+        }, 1000);
+
+        // Summary
+        setTimeout(() => {
+            const successCount = results.querySelectorAll('.success').length;
+            const errorCount = results.querySelectorAll('.error').length;
+
+            if (errorCount === 0) {
+                addResult(`🎉 ALL TESTS PASSED! (${successCount} successful tests)`, 'success');
+            } else {
+                addResult(`⚠️ ${errorCount} test(s) failed out of ${successCount + errorCount} total tests`, 'warning');
+            }
+        }, 1500);
+    </script>
+</body>
+</html>
