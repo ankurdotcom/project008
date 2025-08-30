@@ -1,11 +1,13 @@
 import {configureStore} from '@reduxjs/toolkit';
 import {persistStore, persistReducer} from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import storage from 'redux-persist/lib/storage';
+import {Platform} from 'react-native';
 import rootReducer from './rootReducer';
 
 const persistConfig = {
   key: 'root',
-  storage: AsyncStorage,
+  storage: Platform.OS === 'web' ? storage : AsyncStorage,
   whitelist: ['cart', 'items'],
 };
 

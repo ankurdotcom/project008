@@ -1,17 +1,23 @@
 import React from 'react';
-import {Provider} from 'react-redux';
-import {PersistGate} from 'redux-persist/integration/react';
-import {store, persistor} from './src/store';
-import AppNavigator from './src/navigation/AppNavigator';
+import {View, Text, StyleSheet} from 'react-native';
 
-const App = () => {
+export default function App() {
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <AppNavigator />
-      </PersistGate>
-    </Provider>
+    <View style={styles.container}>
+      <Text style={styles.text}>Hello POS World!</Text>
+    </View>
   );
-};
+}
 
-export default App;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  text: {
+    fontSize: 24,
+    color: '#333',
+  },
+});
