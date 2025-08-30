@@ -1,31 +1,65 @@
-# Phase 4: Integration and Sync Mechanisms
+# Phase 4: WebRTC Transport & Sync Logic
 
 ## Detailed Prompt for AI Agent
-Integrate POS and Owner apps with email broadcasting for updates, sync mechanisms, and data flow. Implement owner-controlled updates (item prices/categories) broadcasted to terminals. Ensure seamless sync over intermittent/slow internet. Use debugging tracker to avoid past integration issues. **TDD Step**: Write integration tests for email broadcasting and sync before implementing the integration logic. **Principles**: Focus on fast integration (modular APIs), high quality (robust error handling), and maintainable code (clear separation of concerns).
+Implement WebRTC DataChannel transport for peer-to-peer communication between POS and Owner terminals. Build the sync logic with retry mechanisms, fallback routing, and background sync using Service Workers. Ensure reliable message delivery over intermittent connectivity. **TDD Step**: Write integration tests for transport layer, sync algorithms, and fallback mechanisms before implementation. **Principles**: Prioritize connection reliability, efficient bandwidth usage, and seamless fallback handling.
 
 ## Acceptance Criteria
-- Owner updates broadcast via email to all terminals.
-- Terminals receive and apply updates instantly.
-- Sync handles offline queues and retries.
-- Data consistency across devices.
-- Performance: Efficient sync without performance degradation.
-- UX: Seamless updates without user disruption.
-- Integration tests pass for sync and broadcasting.
-- No data loss or corruption during sync failures.
-- Zero integration bugs.
+- WebRTC transport: Direct DataChannel communication between devices
+- Signaling system: QR code or local discovery for connection establishment
+- Sync logic: Automatic retry with exponential backoff
+- Fallback routing: USB file exchange, local relay, or optional public relay
+- Service Worker sync: Background message delivery when app is closed
+- Network detection: Automatic sync initiation on connectivity restoration
+- Bandwidth optimization: Compress messages and batch when possible
+- Connection management: Handle connection drops and reconnections
+- Integration tests pass for all transport and sync scenarios
 
 ## Edge Cases
-- Email delays: Handle out-of-order updates.
-- Network drops: Resume sync on reconnection.
-- Conflicting updates: Last-write-wins or manual resolution.
-- High volume: Batch emails to avoid limits.
-- Device offline long-term: Sync on next connection.
-- Auth token expiry: Auto-refresh Google tokens.
-- Mixed internet types: WiFi to mobile data transitions.
+- WebRTC blocked: Automatic fallback to alternative transport
+- NAT/firewall issues: STUN/TURN server integration
+- Connection instability: Robust reconnection logic
+- Large messages: Chunking and reassembly
+- Multiple devices: Handle concurrent connections
+- Battery optimization: Efficient polling and background sync
+- Offline periods: Queue management during extended offline time
+- Transport failures: Seamless switching between transport methods
 
 ## Demo Requirements
-- Demonstrate owner updating item prices/categories via app.
-- Show email broadcast to POS terminals and instant updates.
-- Display seamless sync across devices (online/offline transitions).
-- Present data consistency and duplicate handling.
-- Showcase retry mechanisms for failed syncs.
+- Demonstrate WebRTC connection establishment via QR
+- Show automatic sync on network restoration
+- Display retry mechanisms for failed deliveries
+- Present fallback transport activation
+- Showcase Service Worker background sync
+- Demonstrate connection recovery scenarios
+
+## Technical Implementation
+- **WebRTC Manager**:
+  ```javascript
+  class WebRTCManager {
+    async establishConnection(remoteDeviceId) {
+      // Create peer connection
+      // Set up data channel
+      // Handle ICE candidates
+      // Establish secure channel
+    }
+  }
+  ```
+- **Sync Engine**:
+  ```javascript
+  class SyncEngine {
+    async syncMessages() {
+      // Check connectivity
+      // Select transport
+      // Send queued messages
+      // Handle responses
+      // Update message states
+    }
+  }
+  ```
+- **Transport Abstraction**:
+  - Primary: WebRTC DataChannel
+  - Fallback 1: Local WebSocket relay
+  - Fallback 2: File-based exchange (QR/USB)
+  - Fallback 3: Optional public relay
+- **Service Worker Integration**: Background sync API for offline delivery
+- **Retry Policy**: Exponential backoff with jitter, configurable limits

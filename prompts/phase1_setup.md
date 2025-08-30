@@ -1,29 +1,44 @@
-# Phase 1: Project Setup and Tech Stack Selection
+# Phase 1: POS Queue & Local Storage (IndexedDB)
 
 ## Detailed Prompt for AI Agent
-Set up the initial project structure for the Grocery Shop Chain Sales Tracking system. Analyze the business requirements in `business_requirements.md` and select a lightweight tech stack suitable for low-end devices, mobile browsers, and intermittent/slow internet. Create initial project files, configure build tools, and set up basic folder structures in `pos` and `owner` folders. Ensure the stack supports offline functionality, responsiveness, and seamless online/offline transitions. Use the debugging tracker to reference any prior learnings on tech stack choices. **TDD Step**: Set up testing frameworks (Jest for both apps) and write initial tests for project setup (e.g., test folder creation, basic imports). **Principles**: Focus on fast setup with high-quality foundations for maintainability and performance.
+Implement the core POS queue system with IndexedDB storage for offline-first sales data capture. Create the message queue infrastructure, local storage schema, and basic UI for viewing queued messages. Focus on reliable offline storage, queue management, and data persistence. **TDD Step**: Write unit tests for IndexedDB operations, queue management, and offline storage before implementation. **Principles**: Prioritize data integrity, performance on low-end devices, and seamless offline/online transitions.
 
 ## Acceptance Criteria
-- Project folders `pos` and `owner` are created with appropriate subfolders (e.g., src, public, assets).
-- Tech stack selected: React Native for POS (Android app), React PWA for Owner app.
-- Basic project files (package.json, index.js, etc.) are initialized.
-- Offline support libraries (e.g., Redux Persist, Service Workers) are configured.
-- Build tools (e.g., Metro for RN, Webpack for PWA) are set up.
-- Testing frameworks (Jest) are configured and initial tests pass.
-- Performance optimizations (lazy loading, minimal bundles) implemented.
-- README.md updated with setup instructions.
-- No errors in initial builds or tests.
+- IndexedDB schema implemented: `pos-sync-v1` with stores.messages, stores.keys, stores.config, stores.audit
+- Message queue supports: add, retrieve, update, delete operations
+- Offline sales capture: Store sales data locally when offline
+- Queue persistence: Data survives app restarts and device power cycles
+- Basic queue UI: Display queued messages with status indicators
+- Performance: <100ms for queue operations on low-end devices
+- Storage limits: Handle storage quota exceeded gracefully
+- Unit tests pass for all queue operations
+- No data loss during offline/online transitions
 
 ## Edge Cases
-- Device compatibility: Ensure stack works on Android 5.0+ and modern browsers (Chrome, Firefox, Safari).
-- Low-end devices: Optimize for devices with 1GB RAM or less.
-- Intermittent internet: Implement basic offline queueing.
-- Slow connections: Use lazy loading and minimal bundle sizes.
-- Multiple accounts: Structure for per-device Google account config.
-- Free services: Confirm no paid Google APIs are used.
+- Storage quota exceeded: Graceful degradation, user notification
+- Device storage full: Prioritize critical data, cleanup old messages
+- IndexedDB unavailable: Fallback to localStorage or in-memory storage
+- Large queue: Efficient pagination and lazy loading
+- Concurrent access: Handle multiple tabs/windows accessing queue
+- Power interruption: Atomic operations for data integrity
+- Browser compatibility: Fallback for older browsers without IndexedDB
 
 ## Demo Requirements
-- Showcase initialized project structure with folders and basic files.
-- Demo running development servers for both POS and Owner apps.
-- Display configured testing framework with passing initial tests.
-- Present project overview and setup instructions.
+- Showcase offline sales capture and local storage
+- Demonstrate queue persistence through app restart
+- Display queue management UI with status indicators
+- Show performance metrics for queue operations
+- Present unit test execution and coverage
+
+## Technical Implementation
+- **IndexedDB Schema**:
+  ```javascript
+  // stores.messages: {id, envelope, state, attempts, lastAttemptAt, locked}
+  // stores.keys: {identityKey, pubKey, metadata}
+  // stores.config: {version, appliedAt}
+  // stores.audit: append-only audit trail
+  ```
+- **Queue States**: QUEUED, SENDING, RETRY, ACKED, FAILED
+- **Storage API**: Promise-based wrapper for IndexedDB operations
+- **Queue Manager**: Singleton class handling all queue operations
+- **Offline Detection**: navigator.onLine + periodic connectivity checks

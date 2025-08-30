@@ -134,5 +134,141 @@
     "userRole": "sales",
     "ipAddress": "::ffff:127.0.0.1",
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0"
+  },
+  {
+    "id": "1756575230126",
+    "timestamp": "2025-08-30T17:33:50.126Z",
+    "items": [
+      {
+        "id": "1",
+        "name": "Apple",
+        "price": 2.5,
+        "quantity": 1,
+        "total": 2.5
+      },
+      {
+        "id": "2",
+        "name": "Bread",
+        "price": 3,
+        "quantity": 1,
+        "total": 3
+      },
+      {
+        "id": "3",
+        "name": "Milk",
+        "price": 4.5,
+        "quantity": 1,
+        "total": 4.5
+      },
+      {
+        "id": "6",
+        "name": "Orange",
+        "price": 3.5,
+        "quantity": 1,
+        "total": 3.5
+      },
+      {
+        "id": "5",
+        "name": "Cheese",
+        "price": 5,
+        "quantity": 1,
+        "total": 5
+      }
+    ],
+    "subtotal": 18.5,
+    "total": 18.5,
+    "cashAmount": 19,
+    "change": 0.5,
+    "paymentMethod": "cash",
+    "processedBy": "o***r@grocery.com",
+    "userRole": "owner",
+    "ipAddress": "::ffff:127.0.0.1",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0"
+  },
+  {
+    "id": "1756575301111",
+    "timestamp": "2025-08-30T17:35:01.111Z",
+    "items": [
+      {
+        "id": "3",
+        "name": "Milk",
+        "price": 4.5,
+        "quantity": 1,
+        "total": 4.5
+      },
+      {
+        "id": "2",
+        "name": "Bread",
+        "price": 3,
+        "quantity": 1,
+        "total": 3
+      }
+    ],
+    "subtotal": 7.5,
+    "total": 7.5,
+    "cashAmount": 8,
+    "change": 0.5,
+    "paymentMethod": "cash",
+    "processedBy": "s***s@grocery.com",
+    "userRole": "sales",
+    "ipAddress": "::ffff:127.0.0.1",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0"
+  },
+  {
+    "id": "1756577490487",
+    "timestamp": "2025-08-30T18:11:30.487Z",
+    "items": [
+      {
+        "id": "1",
+        "name": "Apple",
+        "price": 2.5,
+        "quantity": 1,
+        "total": 2.5
+      },
+      {
+        "id": "2",
+        "name": "Bread",
+        "price": 3,
+        "quantity": 1,
+        "total": 3
+      },
+      {
+        "id": "3",
+        "name": "Milk",
+        "price": 4.5,
+        "quantity": 1,
+        "total": 4.5
+      },
+      {
+        "id": "4",
+        "name": "Banana",
+        "price": 1.2,
+        "quantity": 1,
+        "total": 1.2
+      },
+      {
+        "id": "5",
+        "name": "Cheese",
+        "price": 5,
+        "quantity": 1,
+        "total": 5
+      },
+      {
+        "id": "6",
+        "name": "Orange",
+        "price": 3.5,
+        "quantity": 1,
+        "total": 3.5
+      }
+    ],
+    "subtotal": 19.7,
+    "total": 19.7,
+    "cashAmount": 20,
+    "change": 0.3000000000000007,
+    "paymentMethod": "cash",
+    "processedBy": "o***r@grocery.com",
+    "userRole": "owner",
+    "ipAddress": "::ffff:127.0.0.1",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0"
   }
 ]

@@ -55,6 +55,15 @@ app.use(cors({
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
+
+// Cache control middleware for JavaScript files
+app.use('/indexeddb-manager.js', (req, res, next) => {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    next();
+});
+
 app.use(express.static(__dirname));
 
 // In-memory storage for sales data (persisted to file)

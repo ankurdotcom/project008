@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#2196F3">
+    <meta name="description" content="Offline-First Grocery POS System">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/favicon.svg" sizes="any">
+    <link rel="apple-touch-icon" href="/icon-192x192.svg">
     <!-- Security Headers -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' http://localhost:9090; object-src 'none'; base-uri 'self'; form-action 'self';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -10,10 +16,323 @@
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
+    <!-- Cache Control Headers -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Grocery POS System</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="indexeddb-manager.js?v=1.2"></script>
+
+    <!-- Fallback for external dependencies -->
+    <script>
+        // Check if external dependencies loaded successfully
+        window.addEventListener('load', function() {
+            const checkDependencies = () => {
+                const errors = [];
+
+                if (typeof React === 'undefined') {
+                    errors.push('React');
+                }
+                if (typeof ReactDOM === 'undefined') {
+                    errors.push('ReactDOM');
+                }
+                if (typeof Babel === 'undefined') {
+                    errors.push('Babel');
+                }
+
+                if (errors.length > 0) {
+                    console.warn('⚠️ External dependencies failed to load:', errors.join(', '));
+                    console.warn('🔄 Falling back to basic HTML/CSS/JS mode');
+
+                    // Show fallback UI
+                    showFallbackMode(errors);
+                } else {
+                    console.log('✅ All external dependencies loaded successfully');
+                }
+            };
+
+            // Small delay to ensure scripts have time to load/fail
+            setTimeout(checkDependencies, 1000);
+        });
+
+        function showFallbackMode(missingDeps) {
+            const root = document.getElementById('root');
+            if (root) {
+                root.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; font-family: Arial, sans-serif; background: #f5f5f5; min-height: 100vh;">
+                        <h1 style="color: #2196F3;">🛒 Grocery POS System</h1>
+                        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 600px; margin: 2rem auto;">
+                            <h2 style="color: #f44336;">⚠️ Limited Mode</h2>
+                            <p>External dependencies failed to load: <strong>${missingDeps.join(', ')}</strong></p>
+                            <p>The POS system is running in basic mode with limited features.</p>
+                            <p style="color: #666; font-size: 0.9rem; margin-top: 1rem;">
+                                <strong>Available Features:</strong><br>
+                                • Basic HTML interface<br>
+                                • Offline data storage<br>
+                                • Service worker caching<br>
+                                • Manual data sync
+                            </p>
+                            <button onclick="window.location.reload()" style="padding: 0.75rem 1.5rem; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 1rem;">
+                                🔄 Retry Loading
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    </script>
+    <script>
+        // Service Worker and Offline Support
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    console.log('🔧 Registering Service Worker...');
+                    const registration = await navigator.serviceWorker.register('/sw.js', {
+                        scope: '/'
+                    });
+
+                    console.log('✅ Service Worker registered successfully:', registration.scope);
+
+                    // Handle service worker updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        if (newWorker) {
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New version available
+                                    if (confirm('A new version of the POS system is available. Reload to update?')) {
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        }
+                    });
+
+                    // Listen for messages from service worker
+                    navigator.serviceWorker.addEventListener('message', (event) => {
+                        console.log('📨 Message from Service Worker:', event.data);
+
+                        switch (event.data.type) {
+                            case 'SALE_QUEUED_OFFLINE':
+                                // Show notification that sale is queued
+                                showNotification('Sale Queued', 'Your sale has been queued and will sync when online.', 'info');
+                                break;
+                            case 'SYNC_PENDING_SALES':
+                                // Trigger sync of pending sales
+                                syncPendingData();
+                                break;
+                            case 'SYNC_SALES_STATS':
+                                // Trigger sync of sales stats
+                                syncSalesStats();
+                                break;
+                        }
+                    });
+
+                    // Register background sync if supported
+                    if ('sync' in registration) {
+                        try {
+                            await registration.sync.register('sync-pending-sales');
+                            console.log('✅ Background sync registered for pending sales');
+                        } catch (error) {
+                            console.log('⚠️ Background sync registration failed:', error);
+                        }
+                    }
+
+                } catch (error) {
+                    console.error('❌ Service Worker registration failed:', error);
+                }
+            });
+        } else {
+            console.warn('⚠️ Service Workers not supported in this browser');
+        }
+
+        // Offline/Online status handling
+        let isOnline = navigator.onLine;
+        let syncInProgress = false;
+
+        function updateOnlineStatus() {
+            const wasOnline = isOnline;
+            isOnline = navigator.onLine;
+
+            if (wasOnline !== isOnline) {
+                console.log(`🌐 Connection status changed: ${isOnline ? 'ONLINE' : 'OFFLINE'}`);
+
+                // Dispatch custom event for React components
+                window.dispatchEvent(new CustomEvent('connectionchange', {
+                    detail: { online: isOnline }
+                }));
+
+                if (isOnline) {
+                    showNotification('Back Online', 'Connection restored. Syncing data...', 'success');
+                    // Trigger sync when coming back online
+                    setTimeout(() => {
+                        syncPendingData();
+                        syncSalesStats();
+                    }, 1000);
+                } else {
+                    showNotification('Offline Mode', 'You are now offline. Data will be stored locally.', 'warning');
+                }
+            }
+        }
+
+        // Listen for online/offline events
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+
+        // Periodic connectivity check
+        setInterval(() => {
+            if (!navigator.onLine && !syncInProgress) {
+                // Try to ping server to check if connection is actually available
+                fetch('/favicon.ico', { method: 'HEAD', cache: 'no-cache' })
+                    .then(() => {
+                        if (!isOnline) {
+                            console.log('🌐 Connection detected via ping');
+                            updateOnlineStatus();
+                        }
+                    })
+                    .catch(() => {
+                        // Still offline
+                    });
+            }
+        }, 30000); // Check every 30 seconds
+
+        // Sync pending data
+        async function syncPendingData() {
+            if (syncInProgress || !isOnline) return;
+
+            syncInProgress = true;
+            console.log('🔄 Starting data sync...');
+
+            try {
+                // Get all pending messages from IndexedDB
+                if (window.indexedDBManager) {
+                    const pendingMessages = await window.indexedDBManager.getAllSales();
+
+                    if (pendingMessages && pendingMessages.length > 0) {
+                        console.log(`📤 Syncing ${pendingMessages.length} pending sales...`);
+
+                        let syncedCount = 0;
+                        for (const message of pendingMessages) {
+                            if (message.state !== 'SYNCED') {
+                                try {
+                                    const response = await fetch('/api/sales', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                        },
+                                        body: JSON.stringify(message.data)
+                                    });
+
+                                    if (response.ok) {
+                                        await window.indexedDBManager.updateMessageState(message.id, 'SYNCED');
+                                        syncedCount++;
+                                    }
+                                } catch (error) {
+                                    console.warn(`⚠️ Failed to sync message ${message.id}:`, error);
+                                }
+                            }
+                        }
+
+                        if (syncedCount > 0) {
+                            showNotification('Sync Complete', `${syncedCount} sales synced successfully!`, 'success');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Sync failed:', error);
+            } finally {
+                syncInProgress = false;
+            }
+        }
+
+        // Sync sales statistics
+        async function syncSalesStats() {
+            if (!isOnline) return;
+
+            try {
+                console.log('🔄 Syncing sales statistics...');
+                // This will be handled by the React component's fetchSalesStats function
+                window.dispatchEvent(new CustomEvent('syncstats'));
+            } catch (error) {
+                console.error('❌ Stats sync failed:', error);
+            }
+        }
+
+        // Notification system
+        function showNotification(title, message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <strong>${title}</strong><br>
+                    <span>${message}</span>
+                </div>
+                <button class="notification-close" onclick="this.parentElement.remove()">×</button>
+            `;
+
+            // Add styles
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#4CAF50' : type === 'warning' ? '#FF9800' : '#2196F3'};
+                color: white;
+                padding: 1rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                max-width: 300px;
+                font-family: Arial, sans-serif;
+                animation: slideIn 0.3s ease-out;
+            `;
+
+            document.body.appendChild(notification);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.animation = 'slideOut 0.3s ease-out';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // Add notification styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            .notification-close {
+                position: absolute;
+                top: 5px;
+                right: 10px;
+                background: none;
+                border: none;
+                color: white;
+                font-size: 1.5rem;
+                cursor: pointer;
+                opacity: 0.8;
+            }
+            .notification-close:hover {
+                opacity: 1;
+            }
+        `;
+        document.head.appendChild(style);
+
+        console.log('🎯 Offline support initialized');
+    </script>
+    <!-- <script src="indexeddb-tests.js"></script> -->
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
         .container { max-width: 1200px; margin: 0 auto; }
@@ -90,8 +409,73 @@
             const [securityErrors, setSecurityErrors] = useState([]);
             const [hasError, setHasError] = useState(false);
             const [errorMessage, setErrorMessage] = useState('');
+            const [isOnline, setIsOnline] = useState(navigator.onLine);
+            const [dbInitialized, setDbInitialized] = useState(false);
 
             console.log('✅ React State Initialized');
+
+            // Initialize IndexedDB on component mount
+            React.useEffect(() => {
+                const initDB = async () => {
+                    try {
+                        if (window.indexedDB) {
+                            await window.indexedDBManager.init();
+                            setDbInitialized(true);
+                            console.log('✅ IndexedDB initialized successfully');
+                        } else {
+                            console.error('❌ IndexedDB not supported');
+                            setErrorMessage('IndexedDB is not supported in this browser');
+                            setHasError(true);
+                        }
+                    } catch (error) {
+                        console.error('❌ IndexedDB initialization failed:', error);
+                        setErrorMessage('Failed to initialize local storage');
+                        setHasError(true);
+                    }
+                };
+
+                initDB();
+            }, []);
+
+            // Monitor online/offline status
+            React.useEffect(() => {
+                const handleOnline = () => {
+                    setIsOnline(true);
+                    console.log('🌐 Online - attempting to sync queued data');
+                    // Trigger sync when coming back online
+                    setTimeout(() => {
+                        syncPendingData();
+                        fetchSalesStats();
+                    }, 1000);
+                };
+
+                const handleOffline = () => {
+                    setIsOnline(false);
+                    console.log('📴 Offline - data will be stored locally');
+                };
+
+                // Listen for connection changes from service worker
+                const handleConnectionChange = (event) => {
+                    setIsOnline(event.detail.online);
+                };
+
+                // Listen for sync requests from service worker
+                const handleSyncStats = () => {
+                    fetchSalesStats();
+                };
+
+                window.addEventListener('online', handleOnline);
+                window.addEventListener('offline', handleOffline);
+                window.addEventListener('connectionchange', handleConnectionChange);
+                window.addEventListener('syncstats', handleSyncStats);
+
+                return () => {
+                    window.removeEventListener('online', handleOnline);
+                    window.removeEventListener('offline', handleOffline);
+                    window.removeEventListener('connectionchange', handleConnectionChange);
+                    window.removeEventListener('syncstats', handleSyncStats);
+                };
+            }, []);
 
             // Security: Log security events (defined first to avoid reference errors)
             const logSecurityEvent = (event, details) => {
@@ -216,17 +600,29 @@
                 return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
             };
 
+            const clearCart = () => {
+                setCart([]);
+                setCashAmount('');
+                setShowPayment(false);
+                console.log('🗑️ Cart cleared');
+            };
+
             const processPayment = async () => {
+                if (!dbInitialized) {
+                    alert('Local storage not ready. Please wait for initialization.');
+                    return;
+                }
+
                 const total = getTotal();
                 const cash = parseFloat(cashAmount);
-                
+
                 // Security: Validate numeric input
                 if (!validateNumeric(cashAmount, 0.01, 999999)) {
                     alert('Invalid cash amount entered');
                     logSecurityEvent('INVALID_PAYMENT_AMOUNT', { amount: cashAmount, user: maskEmail(userEmail) });
                     return;
                 }
-                
+
                 if (cash < total) {
                     alert('Insufficient cash amount!');
                     logSecurityEvent('INSUFFICIENT_PAYMENT', { cash: cash, total: total, user: maskEmail(userEmail) });
@@ -234,15 +630,15 @@
                 }
 
                 const change = cash - total;
-                
+
                 // Security: Validate change calculation
                 if (change < 0 || !isFinite(change)) {
                     alert('Payment calculation error');
                     logSecurityEvent('PAYMENT_CALCULATION_ERROR', { cash: cash, total: total, change: change, user: maskEmail(userEmail) });
                     return;
                 }
-                
-                // Prepare sales data
+
+                // Prepare sales data for IndexedDB storage
                 const salesData = {
                     items: cart.map(item => ({
                         id: item.id,
@@ -251,68 +647,149 @@
                         quantity: item.quantity,
                         total: item.price * item.quantity
                     })),
-                    subtotal: total, // No tax calculation for now
+                    subtotal: total,
                     total: total,
                     cashAmount: cash,
                     change: change,
                     paymentMethod: 'cash',
                     timestamp: new Date().toISOString(),
                     processedBy: maskEmail(userEmail),
-                    userRole: userRole
+                    userRole: userRole,
+                    deviceInfo: {
+                        userAgent: navigator.userAgent,
+                        platform: navigator.platform,
+                        language: navigator.language
+                    }
                 };
 
                 try {
-                    // Send sales data to server
-                    const response = await fetch('/api/sales', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest' // CSRF protection
-                        },
-                        body: JSON.stringify(salesData)
-                    });
+                    // Store sales data in IndexedDB
+                    const storedMessage = await window.indexedDBManager.storeSale(salesData);
 
-                    if (!response.ok) {
-                        throw new Error('Failed to save sales data');
+                    // Also attempt to sync with server if online
+                    if (isOnline) {
+                        try {
+                            const response = await fetch('/api/sales', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                body: JSON.stringify(salesData)
+                            });
+
+                            if (response.ok) {
+                                // Mark message as synced
+                                await window.indexedDBManager.updateMessageState(storedMessage.id, 'SYNCED');
+                                console.log('✅ Sale synced with server');
+                            } else {
+                                console.warn('⚠️ Server sync failed, data stored locally');
+                            }
+                        } catch (syncError) {
+                            console.warn('⚠️ Server sync failed, data stored locally:', syncError);
+                        }
                     }
 
-                    alert(`Payment successful!\nTotal: $${total.toFixed(2)}\nCash: $${cash.toFixed(2)}\nChange: $${change.toFixed(2)}\n\n--- RECEIPT ---\n${cart.map(item => `${sanitizeInput(item.name)} x${item.quantity} = $${(item.price * item.quantity).toFixed(2)}`).join('\n')}\n\nThank you for shopping!\n\n✅ Sales data saved successfully!`);
-                    logSecurityEvent('PAYMENT_SUCCESSFUL', { total: total, cash: cash, change: change, user: maskEmail(userEmail) });
+                    alert(`Payment successful!\nTotal: $${total.toFixed(2)}\nCash: $${cash.toFixed(2)}\nChange: $${change.toFixed(2)}\n\n--- RECEIPT ---\n${cart.map(item => `${sanitizeInput(item.name)} x${item.quantity} = $${(item.price * item.quantity).toFixed(2)}`).join('\n')}\n\nThank you for shopping!\n\n${isOnline ? '✅ Sales data saved and synced!' : '💾 Sales data saved locally (will sync when online)'}`);
+                    logSecurityEvent('PAYMENT_SUCCESSFUL', { total: total, cash: cash, change: change, user: maskEmail(userEmail), storedLocally: true });
+
                 } catch (error) {
-                    console.error('Error saving sales data:', error);
-                    alert(`Payment successful!\nTotal: $${total.toFixed(2)}\nCash: $${cash.toFixed(2)}\nChange: $${change.toFixed(2)}\n\n--- RECEIPT ---\n${cart.map(item => `${sanitizeInput(item.name)} x${item.quantity} = $${(item.price * item.quantity).toFixed(2)}`).join('\n')}\n\nThank you for shopping!\n\n⚠️ Warning: Sales data could not be saved. Please check server connection.`);
+                    console.error('❌ Error storing sales data:', error);
+                    alert(`Payment successful!\nTotal: $${total.toFixed(2)}\nCash: $${cash.toFixed(2)}\nChange: $${change.toFixed(2)}\n\n--- RECEIPT ---\n${cart.map(item => `${sanitizeInput(item.name)} x${item.quantity} = $${(item.price * item.quantity).toFixed(2)}`).join('\n')}\n\nThank you for shopping!\n\n⚠️ Warning: Sales data could not be saved locally. Please check storage permissions.`);
                     logSecurityEvent('PAYMENT_SAVE_ERROR', { error: error.message, user: maskEmail(userEmail) });
                 }
-                
+
                 // Clear cart and reset
                 setCart([]);
                 setCashAmount('');
                 setShowPayment(false);
             };
 
-            const clearCart = () => {
-                setCart([]);
-                setShowPayment(false);
-            };
+            const syncPendingData = async () => {
+                if (!dbInitialized || !isOnline) return;
 
-            const fetchSalesStats = async () => {
                 try {
-                    const response = await fetch('/api/sales/stats');
-                    if (response.ok) {
-                        const stats = await response.json();
-                        // Calculate total items sold
-                        const itemsResponse = await fetch('/api/sales');
-                        if (itemsResponse.ok) {
-                            const salesData = await itemsResponse.json();
-                            const totalItemsSold = salesData.sales.reduce((total, sale) => 
-                                total + sale.items.reduce((sum, item) => sum + item.quantity, 0), 0);
-                            setSalesStats({...stats, totalItemsSold});
-                        } else {
-                            setSalesStats(stats);
+                    console.log('🔄 Syncing pending sales data...');
+                    const pendingMessages = await window.indexedDBManager.getAllSales();
+                    let syncedCount = 0;
+
+                    if (pendingMessages && pendingMessages.length > 0) {
+                        for (const message of pendingMessages) {
+                            if (message.state !== 'SYNCED') {
+                                try {
+                                    const response = await fetch('/api/sales', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                        },
+                                        body: JSON.stringify(message.data)
+                                    });
+
+                                    if (response.ok) {
+                                        await window.indexedDBManager.updateMessageState(message.id, 'SYNCED');
+                                        syncedCount++;
+                                        console.log(`✅ Synced sale ${message.id}`);
+                                    }
+                                } catch (error) {
+                                    console.warn(`⚠️ Failed to sync sale ${message.id}:`, error);
+                                }
+                            }
+                        }
+
+                        if (syncedCount > 0) {
+                            alert(`✅ Successfully synced ${syncedCount} pending sales!`);
+                            // Refresh sales stats after sync
+                            fetchSalesStats();
                         }
                     }
                 } catch (error) {
-                    console.error('Error fetching sales stats:', error);
+                    console.error('❌ Error syncing pending data:', error);
+                }
+            };
+
+            const fetchSalesStats = async () => {
+                if (!dbInitialized) {
+                    console.warn('IndexedDB not initialized, cannot fetch stats');
+                    return;
+                }
+
+                try {
+                    // Get sales statistics from IndexedDB
+                    const stats = await window.indexedDBManager.getSalesStats();
+                    setSalesStats(stats);
+
+                    // Also attempt to sync with server if online
+                    if (isOnline) {
+                        try {
+                            const response = await fetch('/api/sales/stats');
+                            if (response.ok) {
+                                const serverStats = await response.json();
+                                // Merge server stats with local stats (server takes precedence for some metrics)
+                                setSalesStats({
+                                    ...stats,
+                                    ...serverStats,
+                                    // Keep local calculations for items that server might not have
+                                    totalItemsSold: stats.totalItemsSold || serverStats.totalItemsSold
+                                });
+                            }
+                        } catch (syncError) {
+                            console.warn('Server stats sync failed, using local data only');
+                        }
+                    }
+
+                    console.log('📊 Sales stats loaded:', stats);
+                } catch (error) {
+                    console.error('❌ Error fetching sales stats:', error);
+                    // Set empty stats to prevent UI errors
+                    setSalesStats({
+                        totalSales: 0,
+                        totalRevenue: 0,
+                        averageSale: 0,
+                        todaySales: 0,
+                        todayRevenue: 0,
+                        topItems: []
+                    });
                 }
             };
 
@@ -544,6 +1021,52 @@
                                     Logout
                                 </button>
                             </div>
+                        </div>
+
+                        {/* Status Indicators */}
+                        <div style={{
+                            display: 'flex',
+                            gap: '1rem',
+                            marginTop: '1rem',
+                            fontSize: '0.9rem',
+                            alignItems: 'center'
+                        }}>
+                            <span style={{
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '12px',
+                                background: isOnline ? '#e8f5e8' : '#ffebee',
+                                color: isOnline ? '#2e7d32' : '#c62828',
+                                border: `1px solid ${isOnline ? '#4caf50' : '#f44336'}`
+                            }}>
+                                {isOnline ? '🟢 Online' : '🔴 Offline'}
+                            </span>
+                            <span style={{
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '12px',
+                                background: dbInitialized ? '#e3f2fd' : '#fff3e0',
+                                color: dbInitialized ? '#1976d2' : '#f57c00',
+                                border: `1px solid ${dbInitialized ? '#2196f3' : '#ff9800'}`
+                            }}>
+                                {dbInitialized ? '💾 Storage Ready' : '⏳ Initializing...'}
+                            </span>
+                            {isOnline && dbInitialized && (
+                                <button
+                                    className="btn"
+                                    onClick={syncPendingData}
+                                    style={{
+                                        fontSize: '0.8rem',
+                                        padding: '0.25rem 0.75rem',
+                                        background: '#ff9800',
+                                        border: 'none',
+                                        borderRadius: '12px',
+                                        color: 'white',
+                                        cursor: 'pointer'
+                                    }}
+                                    title="Sync pending data with server"
+                                >
+                                    🔄 Sync Data
+                                </button>
+                            )}
                         </div>
                     </div>
 
