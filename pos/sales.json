@@ -84,5 +84,55 @@
     "userRole": "owner",
     "ipAddress": "::ffff:127.0.0.1",
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0"
+  },
+  {
+    "id": "1756573712607",
+    "timestamp": "2025-08-30T17:08:32.607Z",
+    "items": [
+      {
+        "id": "2",
+        "name": "Bread",
+        "price": 3,
+        "quantity": 1,
+        "total": 3
+      },
+      {
+        "id": "3",
+        "name": "Milk",
+        "price": 4.5,
+        "quantity": 1,
+        "total": 4.5
+      },
+      {
+        "id": "6",
+        "name": "Orange",
+        "price": 3.5,
+        "quantity": 1,
+        "total": 3.5
+      },
+      {
+        "id": "4",
+        "name": "Banana",
+        "price": 1.2,
+        "quantity": 2,
+        "total": 2.4
+      },
+      {
+        "id": "7",
+        "name": "Yogurt",
+        "price": 2,
+        "quantity": 1,
+        "total": 2
+      }
+    ],
+    "subtotal": 15.4,
+    "total": 15.4,
+    "cashAmount": 16,
+    "change": 0.5999999999999996,
+    "paymentMethod": "cash",
+    "processedBy": "s***s@grocery.com",
+    "userRole": "sales",
+    "ipAddress": "::ffff:127.0.0.1",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0"
   }
 ]
