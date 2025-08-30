@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' http://localhost:9090; object-src 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
     <title>Grocery POS System</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -23,11 +30,30 @@
         .btn-danger:hover { background: #da190b; }
         .total { font-size: 1.2rem; font-weight: bold; margin-top: 1rem; }
         .payment { background: white; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; }
-        .input { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; margin: 0.5rem 0; }
+        .role-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+        .owner-theme { border-left: 4px solid #2196F3; }
+        .sales-theme { border-left: 4px solid #4CAF50; }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <!-- Fallback UI in case React fails to load -->
+        <div style="text-align: center; padding: 2rem; font-family: Arial, sans-serif;">
+            <h1 style="color: #2196F3;">🛒 Grocery POS System</h1>
+            <p>Loading application...</p>
+            <div style="margin: 2rem 0;">
+                <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #2196F3; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            </div>
+            <p style="color: #666; font-size: 0.9rem;">If this message persists, please check the browser console for errors.</p>
+        </div>
+    </div>
+
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
@@ -45,9 +71,116 @@
         ];
 
         function GroceryPOS() {
+            console.log('🛒 Grocery POS Component Loading...');
+            
             const [cart, setCart] = useState([]);
             const [cashAmount, setCashAmount] = useState('');
             const [showPayment, setShowPayment] = useState(false);
+            const [salesStats, setSalesStats] = useState(null);
+            const [showSalesDashboard, setShowSalesDashboard] = useState(false);
+            const [userRole, setUserRole] = useState(null);
+            const [userEmail, setUserEmail] = useState('');
+            const [showLogin, setShowLogin] = useState(true);
+            const [showUserManagement, setShowUserManagement] = useState(false);
+            const [users, setUsers] = useState([
+                { email: 'owner@grocery.com', role: 'owner', isInitial: true }
+            ]);
+            const [newUserEmail, setNewUserEmail] = useState('');
+            const [newUserRole, setNewUserRole] = useState('sales');
+            const [securityErrors, setSecurityErrors] = useState([]);
+            const [hasError, setHasError] = useState(false);
+            const [errorMessage, setErrorMessage] = useState('');
+
+            console.log('✅ React State Initialized');
+
+            // Security: Log security events (defined first to avoid reference errors)
+            const logSecurityEvent = (event, details) => {
+                const logEntry = {
+                    timestamp: new Date().toISOString(),
+                    event: event,
+                    details: details,
+                    userAgent: navigator.userAgent,
+                    url: window.location.href
+                };
+                console.log('SECURITY_EVENT:', JSON.stringify(logEntry));
+                // In production, this would be sent to a secure logging service
+            };
+
+            // Security: Input validation and sanitization
+            const validateEmail = (email) => {
+                const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                return emailRegex.test(email) && email.length <= 254 && email.length >= 5;
+            };
+
+            const sanitizeInput = (input) => {
+                if (typeof input !== 'string') return '';
+                return input.replace(/[<>]/g, '').trim();
+            };
+
+            const validateNumeric = (value, min = 0, max = 999999) => {
+                const num = parseFloat(value);
+                return !isNaN(num) && num >= min && num <= max && isFinite(num);
+            };
+
+            // Security: Mask sensitive data
+            const maskEmail = (email) => {
+                if (!email || !email.includes('@')) return 'user@domain.com';
+                const [local, domain] = email.split('@');
+                const maskedLocal = local.charAt(0) + '*'.repeat(Math.max(0, local.length - 2)) + local.charAt(local.length - 1);
+                return `${maskedLocal}@${domain}`;
+            };
+
+            // Error handling
+            React.useEffect(() => {
+                const handleError = (error) => {
+                    console.error('Application Error:', error);
+                    setHasError(true);
+                    setErrorMessage(error.message || 'An unexpected error occurred');
+                };
+
+                window.addEventListener('error', handleError);
+                window.addEventListener('unhandledrejection', (event) => {
+                    handleError(event.reason);
+                });
+
+                return () => {
+                    window.removeEventListener('error', handleError);
+                    window.removeEventListener('unhandledrejection', handleError);
+                };
+            }, []);
+
+            // If there's an error, show error UI
+            if (hasError) {
+                return (
+                    <div className="container">
+                        <div className="header">
+                            <h1>🛒 Grocery POS System</h1>
+                            <p style={{color: '#f44336'}}>Application Error</p>
+                        </div>
+                        <div style={{
+                            background: '#ffebee',
+                            color: '#c62828',
+                            padding: '2rem',
+                            borderRadius: '8px',
+                            border: '1px solid #ffcdd2',
+                            textAlign: 'center'
+                        }}>
+                            <h2>⚠️ Something went wrong</h2>
+                            <p><strong>Error:</strong> {errorMessage}</p>
+                            <p style={{fontSize: '0.9rem', marginTop: '1rem'}}>
+                                Please check the browser console for more details and try refreshing the page.
+                            </p>
+                            <button
+                                className="btn"
+                                onClick={() => window.location.reload()}
+                                style={{marginTop: '1rem'}}
+                            >
+                                🔄 Reload Application
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
 
             const addToCart = (item) => {
                 setCart(prevCart => {
@@ -83,17 +216,73 @@
                 return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
             };
 
-            const processPayment = () => {
+            const processPayment = async () => {
                 const total = getTotal();
                 const cash = parseFloat(cashAmount);
                 
+                // Security: Validate numeric input
+                if (!validateNumeric(cashAmount, 0.01, 999999)) {
+                    alert('Invalid cash amount entered');
+                    logSecurityEvent('INVALID_PAYMENT_AMOUNT', { amount: cashAmount, user: maskEmail(userEmail) });
+                    return;
+                }
+                
                 if (cash < total) {
                     alert('Insufficient cash amount!');
+                    logSecurityEvent('INSUFFICIENT_PAYMENT', { cash: cash, total: total, user: maskEmail(userEmail) });
                     return;
                 }
 
                 const change = cash - total;
-                alert(`Payment successful!\nTotal: $${total.toFixed(2)}\nCash: $${cash.toFixed(2)}\nChange: $${change.toFixed(2)}\n\n--- RECEIPT ---\n${cart.map(item => `${item.name} x${item.quantity} = $${(item.price * item.quantity).toFixed(2)}`).join('\n')}\n\nThank you for shopping!`);
+                
+                // Security: Validate change calculation
+                if (change < 0 || !isFinite(change)) {
+                    alert('Payment calculation error');
+                    logSecurityEvent('PAYMENT_CALCULATION_ERROR', { cash: cash, total: total, change: change, user: maskEmail(userEmail) });
+                    return;
+                }
+                
+                // Prepare sales data
+                const salesData = {
+                    items: cart.map(item => ({
+                        id: item.id,
+                        name: sanitizeInput(item.name),
+                        price: item.price,
+                        quantity: item.quantity,
+                        total: item.price * item.quantity
+                    })),
+                    subtotal: total, // No tax calculation for now
+                    total: total,
+                    cashAmount: cash,
+                    change: change,
+                    paymentMethod: 'cash',
+                    timestamp: new Date().toISOString(),
+                    processedBy: maskEmail(userEmail),
+                    userRole: userRole
+                };
+
+                try {
+                    // Send sales data to server
+                    const response = await fetch('/api/sales', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest' // CSRF protection
+                        },
+                        body: JSON.stringify(salesData)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to save sales data');
+                    }
+
+                    alert(`Payment successful!\nTotal: $${total.toFixed(2)}\nCash: $${cash.toFixed(2)}\nChange: $${change.toFixed(2)}\n\n--- RECEIPT ---\n${cart.map(item => `${sanitizeInput(item.name)} x${item.quantity} = $${(item.price * item.quantity).toFixed(2)}`).join('\n')}\n\nThank you for shopping!\n\n✅ Sales data saved successfully!`);
+                    logSecurityEvent('PAYMENT_SUCCESSFUL', { total: total, cash: cash, change: change, user: maskEmail(userEmail) });
+                } catch (error) {
+                    console.error('Error saving sales data:', error);
+                    alert(`Payment successful!\nTotal: $${total.toFixed(2)}\nCash: $${cash.toFixed(2)}\nChange: $${change.toFixed(2)}\n\n--- RECEIPT ---\n${cart.map(item => `${sanitizeInput(item.name)} x${item.quantity} = $${(item.price * item.quantity).toFixed(2)}`).join('\n')}\n\nThank you for shopping!\n\n⚠️ Warning: Sales data could not be saved. Please check server connection.`);
+                    logSecurityEvent('PAYMENT_SAVE_ERROR', { error: error.message, user: maskEmail(userEmail) });
+                }
                 
                 // Clear cart and reset
                 setCart([]);
@@ -106,11 +295,256 @@
                 setShowPayment(false);
             };
 
+            const fetchSalesStats = async () => {
+                try {
+                    const response = await fetch('/api/sales/stats');
+                    if (response.ok) {
+                        const stats = await response.json();
+                        // Calculate total items sold
+                        const itemsResponse = await fetch('/api/sales');
+                        if (itemsResponse.ok) {
+                            const salesData = await itemsResponse.json();
+                            const totalItemsSold = salesData.sales.reduce((total, sale) => 
+                                total + sale.items.reduce((sum, item) => sum + item.quantity, 0), 0);
+                            setSalesStats({...stats, totalItemsSold});
+                        } else {
+                            setSalesStats(stats);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching sales stats:', error);
+                }
+            };
+
+            const toggleSalesDashboard = () => {
+                setShowSalesDashboard(!showSalesDashboard);
+                if (!showSalesDashboard) {
+                    fetchSalesStats();
+                }
+            };
+
+            const toggleUserManagement = () => {
+                setShowUserManagement(!showUserManagement);
+            };
+
+            const selectRole = (role) => {
+                setUserRole(role);
+                setShowRoleSelection(false);
+            };
+
+            const loginWithGmail = () => {
+                if (!userEmail || !userEmail.includes('@')) {
+                    alert('Please enter a valid Gmail address');
+                    logSecurityEvent('INVALID_EMAIL_FORMAT', { email: maskEmail(userEmail) });
+                    return;
+                }
+
+                // Security: Validate email format
+                if (!validateEmail(userEmail)) {
+                    alert('Invalid email format');
+                    logSecurityEvent('INVALID_EMAIL_FORMAT', { email: maskEmail(userEmail) });
+                    return;
+                }
+
+                // Security: Sanitize input
+                const sanitizedEmail = sanitizeInput(userEmail);
+
+                // Find user in the system
+                const user = users.find(u => u.email.toLowerCase() === sanitizedEmail.toLowerCase());
+
+                if (!user) {
+                    alert('Gmail address not registered. Please contact the owner to add your account.');
+                    logSecurityEvent('UNAUTHORIZED_ACCESS_ATTEMPT', { email: maskEmail(sanitizedEmail) });
+                    return;
+                }
+
+                setUserRole(user.role);
+                setShowLogin(false);
+                alert(`Welcome ${user.role === 'owner' ? '👑 Owner' : '🛍️ Sales Person'}: ${maskEmail(user.email)}`);
+                logSecurityEvent('SUCCESSFUL_LOGIN', { email: maskEmail(sanitizedEmail), role: user.role });
+            };
+
+            const addUser = () => {
+                if (!newUserEmail || !newUserEmail.includes('@')) {
+                    alert('Please enter a valid Gmail address');
+                    logSecurityEvent('INVALID_EMAIL_FORMAT', { email: maskEmail(newUserEmail) });
+                    return;
+                }
+
+                // Security: Validate email format
+                if (!validateEmail(newUserEmail)) {
+                    alert('Invalid email format');
+                    logSecurityEvent('INVALID_EMAIL_FORMAT', { email: maskEmail(newUserEmail) });
+                    return;
+                }
+
+                // Security: Sanitize input
+                const sanitizedEmail = sanitizeInput(newUserEmail);
+
+                if (users.some(u => u.email.toLowerCase() === sanitizedEmail.toLowerCase())) {
+                    alert('This Gmail address is already registered');
+                    logSecurityEvent('DUPLICATE_USER_ATTEMPT', { email: maskEmail(sanitizedEmail) });
+                    return;
+                }
+
+                const newUser = {
+                    email: sanitizedEmail,
+                    role: newUserRole,
+                    isInitial: false
+                };
+
+                setUsers([...users, newUser]);
+                setNewUserEmail('');
+                setNewUserRole('sales');
+                alert(`User ${maskEmail(sanitizedEmail)} added as ${newUserRole === 'owner' ? 'Owner' : 'Sales Person'}`);
+                logSecurityEvent('USER_ADDED', { email: maskEmail(sanitizedEmail), role: newUserRole, addedBy: maskEmail(userEmail) });
+            };
+
+            const removeUser = (email) => {
+                if (email === 'owner@grocery.com') {
+                    alert('Cannot remove the initial owner account');
+                    return;
+                }
+
+                if (confirm(`Are you sure you want to remove ${email}?`)) {
+                    setUsers(users.filter(u => u.email !== email));
+                    alert(`User ${email} removed successfully`);
+                }
+            };
+
+            const changeUserRole = (email, newRole) => {
+                if (email === 'owner@grocery.com') {
+                    alert('Cannot change the initial owner role');
+                    return;
+                }
+
+                setUsers(users.map(u =>
+                    u.email === email ? { ...u, role: newRole } : u
+                ));
+                alert(`${email} role changed to ${newRole === 'owner' ? 'Owner' : 'Sales Person'}`);
+            };
+
+            const logout = () => {
+                setUserRole(null);
+                setUserEmail('');
+                setShowLogin(true);
+                setCart([]);
+                setCashAmount('');
+                setShowPayment(false);
+                setShowSalesDashboard(false);
+                setShowUserManagement(false);
+                setSalesStats(null);
+                logSecurityEvent('USER_LOGOUT', { previousUser: maskEmail(userEmail), role: userRole });
+            };
+
+            // Login Screen
+            if (showLogin) {
+                return (
+                    <div className="container">
+                        <div className="header">
+                            <h1>🛒 Grocery POS System</h1>
+                            <p>Gmail Authentication Required</p>
+                        </div>
+
+                        <div style={{maxWidth: '400px', margin: '2rem auto'}}>
+                            <div style={{
+                                background: 'white',
+                                padding: '2rem',
+                                borderRadius: '12px',
+                                boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                            }}>
+                                <h2 style={{textAlign: 'center', marginBottom: '1.5rem', color: '#333'}}>
+                                    🔐 Login with Gmail
+                                </h2>
+
+                                <div style={{marginBottom: '1rem'}}>
+                                    <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 'bold'}}>
+                                        Gmail Address:
+                                    </label>
+                                    <input
+                                        type="email"
+                                        className="input"
+                                        placeholder="your.email@gmail.com"
+                                        value={userEmail}
+                                        onChange={(e) => setUserEmail(e.target.value)}
+                                        style={{width: '100%', padding: '0.75rem', fontSize: '1rem'}}
+                                    />
+                                </div>
+
+                                <button
+                                    className="btn"
+                                    onClick={loginWithGmail}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem',
+                                        fontSize: '1rem',
+                                        background: '#4285f4',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        color: 'white',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    📧 Sign in with Gmail
+                                </button>
+
+                                <div style={{
+                                    marginTop: '1rem',
+                                    padding: '1rem',
+                                    background: '#f8f9fa',
+                                    borderRadius: '6px',
+                                    fontSize: '0.9rem',
+                                    color: '#666'
+                                }}>
+                                    <strong>Demo Accounts:</strong><br/>
+                                    • Owner: owner@grocery.com<br/>
+                                    • Sales: sales@grocery.com (if added by owner)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
             return (
-                <div className="container">
+                <div className={`container ${userRole === 'owner' ? 'owner-theme' : 'sales-theme'}`}>
                     <div className="header">
-                        <h1>🛒 Grocery POS System</h1>
-                        <p>Professional Point of Sale for Grocery Store</p>
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                            <div>
+                                <h1>🛒 Grocery POS System</h1>
+                                <p>Professional Point of Sale for Grocery Store</p>
+                                <div style={{
+                                    fontSize: '0.9rem',
+                                    color: '#e3f2fd',
+                                    marginTop: '0.5rem',
+                                    fontWeight: 'bold'
+                                }}>
+                                    Logged in as: {userRole === 'owner' ? '👑 Owner' : '🛍️ Sales Person'} ({maskEmail(userEmail)})
+                                </div>
+                            </div>
+                            <div style={{display: 'flex', gap: '0.5rem'}}>
+                                {userRole === 'owner' && (
+                                    <button
+                                        className="btn"
+                                        onClick={toggleUserManagement}
+                                        style={{
+                                            fontSize: '0.9rem',
+                                            padding: '0.5rem 1rem',
+                                            background: '#ff9800'
+                                        }}
+                                    >
+                                        👥 {showUserManagement ? 'Hide Users' : 'Manage Users'}
+                                    </button>
+                                )}
+                                <button
+                                    className="btn btn-danger"
+                                    onClick={logout}
+                                    style={{fontSize: '0.9rem', padding: '0.5rem 1rem'}}
+                                >
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="grid">
@@ -131,6 +565,19 @@
                         <div>
                             <div className="cart">
                                 <h2>Shopping Cart ({cart.length} items)</h2>
+                                {userRole === 'sales' && (
+                                    <div style={{
+                                        background: '#e8f5e8',
+                                        color: '#2e7d32',
+                                        padding: '0.5rem',
+                                        borderRadius: '4px',
+                                        marginBottom: '1rem',
+                                        fontSize: '0.9rem',
+                                        border: '1px solid #4caf50'
+                                    }}>
+                                        💰 <strong>Sales Mode:</strong> Process customer transactions and manage cart
+                                    </div>
+                                )}
                                 {cart.length === 0 ? (
                                     <p>Cart is empty</p>
                                 ) : (
@@ -202,11 +649,201 @@
                             )}
                         </div>
                     </div>
+
+                    <div style={{marginTop: '2rem', textAlign: 'center'}}>
+                        {userRole === 'owner' && (
+                            <button className="btn" onClick={toggleSalesDashboard}>
+                                {showSalesDashboard ? 'Hide Sales Dashboard' : 'Show Sales Dashboard'}
+                            </button>
+                        )}
+                        {userRole === 'sales' && (
+                            <div style={{
+                                background: '#e8f5e8',
+                                color: '#2e7d32',
+                                padding: '1rem',
+                                borderRadius: '8px',
+                                border: '1px solid #4caf50'
+                            }}>
+                                <strong>💡 Sales Mode:</strong> Focus on customer service and transactions.
+                                Dashboard access is restricted to owners only.
+                            </div>
+                        )}
+                    </div>
+
+                    {showSalesDashboard && userRole === 'owner' && (
+                        <div className="sales-dashboard" style={{marginTop: '2rem'}}>
+                            <h2>📊 Sales Dashboard</h2>
+                            {salesStats ? (
+                                <div className="stats-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem'}}>
+                                    <div className="stat-card" style={{border: '1px solid #ddd', padding: '1rem', borderRadius: '8px'}}>
+                                        <h3>Total Sales</h3>
+                                        <p style={{fontSize: '2rem', fontWeight: 'bold'}}>${salesStats.totalRevenue?.toFixed(2) || '0.00'}</p>
+                                    </div>
+                                    <div className="stat-card" style={{border: '1px solid #ddd', padding: '1rem', borderRadius: '8px'}}>
+                                        <h3>Total Transactions</h3>
+                                        <p style={{fontSize: '2rem', fontWeight: 'bold'}}>{salesStats.totalSales || 0}</p>
+                                    </div>
+                                    <div className="stat-card" style={{border: '1px solid #ddd', padding: '1rem', borderRadius: '8px'}}>
+                                        <h3>Average Sale</h3>
+                                        <p style={{fontSize: '2rem', fontWeight: 'bold'}}>${salesStats.averageSale?.toFixed(2) || '0.00'}</p>
+                                    </div>
+                                    <div className="stat-card" style={{border: '1px solid #ddd', padding: '1rem', borderRadius: '8px'}}>
+                                        <h3>Items Sold</h3>
+                                        <p style={{fontSize: '2rem', fontWeight: 'bold'}}>{salesStats.totalItemsSold || 0}</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p>Loading sales statistics...</p>
+                            )}
+                        </div>
+                    )}
+
+                    {showUserManagement && userRole === 'owner' && (
+                        <div className="user-management" style={{marginTop: '2rem'}}>
+                            <h2>👥 User Management</h2>
+
+                            {/* Add New User Section */}
+                            <div style={{
+                                background: 'white',
+                                padding: '1.5rem',
+                                borderRadius: '8px',
+                                marginBottom: '2rem',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}>
+                                <h3>Add New User</h3>
+                                <div style={{display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1rem'}}>
+                                    <input
+                                        type="email"
+                                        placeholder="user@gmail.com"
+                                        value={newUserEmail}
+                                        onChange={(e) => setNewUserEmail(e.target.value)}
+                                        style={{flex: 1, padding: '0.5rem'}}
+                                    />
+                                    <select
+                                        value={newUserRole}
+                                        onChange={(e) => setNewUserRole(e.target.value)}
+                                        style={{padding: '0.5rem'}}
+                                    >
+                                        <option value="sales">Sales Person</option>
+                                        <option value="owner">Owner</option>
+                                    </select>
+                                    <button className="btn" onClick={addUser}>
+                                        Add User
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* User List Section */}
+                            <div style={{
+                                background: 'white',
+                                padding: '1.5rem',
+                                borderRadius: '8px',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}>
+                                <h3>Registered Users ({users.length})</h3>
+                                <div style={{marginTop: '1rem'}}>
+                                    {users.map(user => (
+                                        <div key={user.email} style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            padding: '1rem',
+                                            border: '1px solid #eee',
+                                            borderRadius: '6px',
+                                            marginBottom: '0.5rem'
+                                        }}>
+                                            <div>
+                                                <strong>{user.role === 'owner' ? '👑' : '🛍️'} {maskEmail(user.email)}</strong>
+                                                <span style={{
+                                                    marginLeft: '1rem',
+                                                    padding: '0.2rem 0.5rem',
+                                                    borderRadius: '12px',
+                                                    fontSize: '0.8rem',
+                                                    background: user.role === 'owner' ? '#e3f2fd' : '#e8f5e8',
+                                                    color: user.role === 'owner' ? '#1976d2' : '#2e7d32'
+                                                }}>
+                                                    {user.role.toUpperCase()}
+                                                </span>
+                                                {user.isInitial && (
+                                                    <span style={{
+                                                        marginLeft: '0.5rem',
+                                                        padding: '0.2rem 0.5rem',
+                                                        borderRadius: '12px',
+                                                        fontSize: '0.8rem',
+                                                        background: '#fff3e0',
+                                                        color: '#f57c00'
+                                                    }}>
+                                                        INITIAL OWNER
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div style={{display: 'flex', gap: '0.5rem'}}>
+                                                {!user.isInitial && (
+                                                    <>
+                                                        <select
+                                                            value={user.role}
+                                                            onChange={(e) => changeUserRole(user.email, e.target.value)}
+                                                            style={{padding: '0.3rem', fontSize: '0.8rem'}}
+                                                        >
+                                                            <option value="sales">Sales</option>
+                                                            <option value="owner">Owner</option>
+                                                        </select>
+                                                        <button
+                                                            className="btn btn-danger"
+                                                            onClick={() => removeUser(user.email)}
+                                                            style={{fontSize: '0.8rem', padding: '0.3rem 0.6rem'}}
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
 
-        ReactDOM.render(<GroceryPOS />, document.getElementById('root'));
+        // Test if React is loaded and render the component
+        console.log('🔧 Testing React availability...');
+        if (typeof React !== 'undefined' && typeof ReactDOM !== 'undefined') {
+            console.log('✅ React and ReactDOM are available');
+            try {
+                // Use createRoot for React 18+ compatibility
+                const rootElement = document.getElementById('root');
+                if (ReactDOM.createRoot) {
+                    const root = ReactDOM.createRoot(rootElement);
+                    root.render(<GroceryPOS />);
+                } else {
+                    // Fallback for older React versions
+                    ReactDOM.render(<GroceryPOS />, rootElement);
+                }
+                console.log('✅ Application rendered successfully');
+            } catch (error) {
+                console.error('❌ Error rendering application:', error);
+                document.getElementById('root').innerHTML = `
+                    <div style="text-align: center; padding: 2rem; font-family: Arial, sans-serif; color: #f44336;">
+                        <h1>❌ Application Failed to Load</h1>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p>Please check the browser console for more details.</p>
+                        <button onclick="window.location.reload()" style="padding: 0.5rem 1rem; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">🔄 Reload</button>
+                    </div>
+                `;
+            }
+        } else {
+            console.error('❌ React or ReactDOM not available');
+            document.getElementById('root').innerHTML = `
+                <div style="text-align: center; padding: 2rem; font-family: Arial, sans-serif; color: #f44336;">
+                    <h1>❌ React Not Loaded</h1>
+                    <p>React libraries failed to load. Please check your internet connection and try again.</p>
+                    <button onclick="window.location.reload()" style="padding: 0.5rem 1rem; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">🔄 Reload</button>
+                </div>
+            `;
+        }
     </script>
 </body>
 </html>

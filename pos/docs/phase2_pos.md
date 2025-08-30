@@ -33,3 +33,11 @@ Develop the POS terminal app using React Native. Implement core features: item l
 - Demo adding items to cart, quantity adjustments, and calculations.
 - Display offline mode with queued data.
 - Present bill printing simulation (if hardware available).
+- **Role-Based Access**: Demonstrate Owner vs Sales Person role selection and access differences.
+
+## Role-Based Access Implementation
+- **Gmail Authentication**: Users login with Gmail credentials
+- **Dynamic User Management**: Owner can add/remove users and assign roles
+- **Role-Based UI**: Interface adapts based on user permissions
+- **User Management Interface**: Owner-exclusive user administration panel
+- **Session Security**: Secure login/logout with role persistence

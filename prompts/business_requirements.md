@@ -28,3 +28,54 @@
 - The app should use a configured Google Drive for persistence of report data in Google Sheets.
 - The system should only use free Google services (such as Gmail and Google Drive) and should not require any payment to Google.
 - Each device and terminal will use its own configured Google account to facilitate seamless operation of the system.
+
+## User Roles and Access Control
+
+### Gmail-Based Authentication System
+- **Primary Authentication**: System uses Gmail accounts for user authentication
+- **Role Assignment**: Each Gmail account is assigned either Owner or Sales Person role
+- **Automatic Role Detection**: Users are automatically granted appropriate permissions based on their Gmail account
+- **Centralized Management**: Owner manages all user roles and Gmail associations
+
+### Owner Role Configuration
+- **Initial Setup**: First Gmail account configured automatically becomes Owner
+- **Administrative Access**: Owner can manage all user accounts and roles
+- **User Management**: Owner can add, remove, and modify user roles
+- **System Configuration**: Owner controls all system settings and configurations
+
+### User Management Features
+- **Add Users**: Owner can add unlimited Gmail accounts to the system
+- **Role Assignment**: Owner assigns Owner or Sales Person role to each Gmail account
+- **Role Modification**: Owner can change user roles at any time
+- **User Removal**: Owner can remove users from the system
+- **User List**: Owner can view all registered users and their roles
+
+### Authentication Flow
+- **Gmail Login**: Users authenticate using their Gmail credentials
+- **Role Verification**: System verifies user role based on Gmail account
+- **Automatic Access**: Appropriate interface loads based on user role
+- **Session Management**: User sessions tied to Gmail authentication
+
+### Owner Role Permissions
+- Can access and view the sales dashboard
+- Can view all sales reports and analytics
+- Can manage item catalog and pricing
+- Can manage user accounts and roles
+- Can configure system settings
+- Full administrative access to all features
+
+### Sales Person Role Permissions
+- Can perform sales transactions (add items, process payments)
+- Can view item catalog for sales
+- Can generate receipts
+- **Cannot access sales dashboard or reporting features**
+- **Cannot manage users or system settings**
+- Limited to operational sales functions only
+
+### Role-Based UI Requirements
+- POS interface must adapt based on authenticated user role
+- Sales dashboard and user management features hidden for sales person role
+- Gmail-based login implemented at application startup
+- Clear visual distinction between role capabilities
+- Role-based navigation and feature availability
+- User management interface available only to Owner role

@@ -1,0 +1,88 @@
+[
+  {
+    "id": "1734623456789",
+    "timestamp": "2024-12-19T16:30:56.789Z",
+    "items": [
+      {
+        "id": "1",
+        "name": "Apple",
+        "price": 2.5,
+        "quantity": 2,
+        "total": 5
+      }
+    ],
+    "subtotal": 5,
+    "total": 5,
+    "cashAmount": 10,
+    "change": 5,
+    "paymentMethod": "cash"
+  },
+  {
+    "id": "1734623567890",
+    "timestamp": "2024-12-19T16:32:47.890Z",
+    "items": [
+      {
+        "id": "2",
+        "name": "Bread",
+        "price": 3,
+        "quantity": 1,
+        "total": 3
+      },
+      {
+        "id": "3",
+        "name": "Milk",
+        "price": 4.5,
+        "quantity": 1,
+        "total": 4.5
+      }
+    ],
+    "subtotal": 7.5,
+    "total": 7.5,
+    "cashAmount": 10,
+    "change": 2.5,
+    "paymentMethod": "cash"
+  },
+  {
+    "id": "1756573526446",
+    "timestamp": "2025-08-30T17:05:26.446Z",
+    "items": [
+      {
+        "id": "3",
+        "name": "Milk",
+        "price": 4.5,
+        "quantity": 1,
+        "total": 4.5
+      },
+      {
+        "id": "2",
+        "name": "Bread",
+        "price": 3,
+        "quantity": 1,
+        "total": 3
+      },
+      {
+        "id": "5",
+        "name": "Cheese",
+        "price": 5,
+        "quantity": 1,
+        "total": 5
+      },
+      {
+        "id": "6",
+        "name": "Orange",
+        "price": 3.5,
+        "quantity": 1,
+        "total": 3.5
+      }
+    ],
+    "subtotal": 16,
+    "total": 16,
+    "cashAmount": 16,
+    "change": 0,
+    "paymentMethod": "cash",
+    "processedBy": "o***r@grocery.com",
+    "userRole": "owner",
+    "ipAddress": "::ffff:127.0.0.1",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0"
+  }
+]
