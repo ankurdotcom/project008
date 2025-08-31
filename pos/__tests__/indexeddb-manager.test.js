@@ -12,14 +12,18 @@ describe('IndexedDB Manager Tests', () => {
     // Reset IndexedDB for each test
     const databaseName = 'grocery-pos-test';
     
-    // Clear any existing databases
+    // Clear any existing databases with timeout
     try {
       if (global.indexedDB) {
         const deleteRequest = global.indexedDB.deleteDatabase(databaseName);
-        await new Promise((resolve) => {
-          deleteRequest.onsuccess = resolve;
-          deleteRequest.onerror = resolve;
-        });
+        await Promise.race([
+          new Promise((resolve) => {
+            deleteRequest.onsuccess = resolve;
+            deleteRequest.onerror = resolve;
+            deleteRequest.onblocked = resolve;
+          }),
+          new Promise((resolve) => setTimeout(resolve, 1000)) // 1 second timeout
+        ]);
       }
     } catch (error) {
       // Ignore deletion errors
@@ -179,8 +183,13 @@ describe('IndexedDB Manager Tests', () => {
 
   describe('Sales Operations', () => {
     beforeEach(async () => {
-      await dbManager.init();
-    });
+      await Promise.race([
+        dbManager.init(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Init timeout')), 5000)
+        )
+      ]);
+    }, 10000);
 
     test('should store sale successfully', async () => {
       const testSale = {
@@ -248,8 +257,13 @@ describe('IndexedDB Manager Tests', () => {
 
   describe('Message State Management', () => {
     beforeEach(async () => {
-      await dbManager.init();
-    });
+      await Promise.race([
+        dbManager.init(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Init timeout')), 5000)
+        )
+      ]);
+    }, 10000);
 
     test('should update message state successfully', async () => {
       const testSale = {
@@ -277,7 +291,12 @@ describe('IndexedDB Manager Tests', () => {
     });
 
     test('should handle storage quota exceeded scenario', async () => {
-      await dbManager.init();
+      await Promise.race([
+        dbManager.init(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Init timeout')), 5000)
+        )
+      ]);
       
       // Simulate storage quota exceeded by creating large sale data
       const largeSale = {
@@ -304,7 +323,12 @@ describe('IndexedDB Manager Tests', () => {
     });
 
     test('should handle concurrent access to database', async () => {
-      await dbManager.init();
+      await Promise.race([
+        dbManager.init(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Init timeout')), 5000)
+        )
+      ]);
       
       const concurrentSales = Array.from({ length: 5 }, (_, i) => ({
         items: [{ id: i, name: `Item ${i}`, price: 10, quantity: 1, total: 10 }],
@@ -328,8 +352,13 @@ describe('IndexedDB Manager Tests', () => {
 
   describe('Performance Tests', () => {
     beforeEach(async () => {
-      await dbManager.init();
-    });
+      await Promise.race([
+        dbManager.init(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Init timeout')), 5000)
+        )
+      ]);
+    }, 10000);
 
     test('should handle bulk operations efficiently', async () => {
       const startTime = Date.now();

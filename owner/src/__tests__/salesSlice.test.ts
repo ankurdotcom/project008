@@ -1,4 +1,4 @@
-import {updateSales, addSalesData} from './store/slices/salesSlice';
+import {updateSales, addSalesData} from '../store/slices/salesSlice';
 
 describe('Sales Slice', () => {
   it('should update sales data', () => {

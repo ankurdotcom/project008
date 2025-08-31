@@ -59,3 +59,31 @@ global.console = {
   warn: jest.fn(),
   error: jest.fn()
 };
+
+// Polyfill for structuredClone (Node.js < 17)
+if (!global.structuredClone) {
+  global.structuredClone = (obj) => {
+    return JSON.parse(JSON.stringify(obj));
+  };
+}
+
+// Polyfill for TextEncoder/TextDecoder
+if (!global.TextEncoder) {
+  global.TextEncoder = class TextEncoder {
+    encode(input) {
+      const encoded = [];
+      for (let i = 0; i < input.length; i++) {
+        encoded.push(input.charCodeAt(i));
+      }
+      return new Uint8Array(encoded);
+    }
+  };
+}
+
+if (!global.TextDecoder) {
+  global.TextDecoder = class TextDecoder {
+    decode(input) {
+      return String.fromCharCode(...input);
+    }
+  };
+}
