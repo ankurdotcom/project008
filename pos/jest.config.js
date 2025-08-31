@@ -1,12 +1,29 @@
 module.exports = {
-  preset: 'react-native',
+  testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  transformIgnorePatterns: [
-    'node_modules/(?!(@react-native|react-native|react-native-vector-icons)/)',
+  testMatch: [
+    '**/__tests__/**/*.test.js',
+    '**/?(*.)+(spec|test).js'
   ],
-  testMatch: ['**/__tests__/**/*.test.ts', '**/?(*.)+(spec|test).ts'],
   collectCoverageFrom: [
-    'src/**/*.{ts,tsx}',
-    '!src/**/*.d.ts',
+    'indexeddb-manager.js',
+    'sw.js',
+    'src/**/*.{js,jsx}',
+    '!**/node_modules/**',
+    '!**/lib/**'
   ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80
+    }
+  },
+  coverageReporters: ['text', 'lcov', 'html'],
+  transform: {
+    '^.+\\.(js|jsx)$': 'babel-jest'
+  },
+  moduleFileExtensions: ['js', 'jsx', 'json'],
+  testTimeout: 10000
 };

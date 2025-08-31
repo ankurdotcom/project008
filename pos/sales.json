@@ -270,5 +270,34 @@
     "userRole": "owner",
     "ipAddress": "::ffff:127.0.0.1",
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0"
+  },
+  {
+    "id": "1756606563550",
+    "timestamp": "2025-08-31T02:16:03.550Z",
+    "items": [
+      {
+        "id": "1",
+        "name": "Apple",
+        "price": 2.5,
+        "quantity": 1,
+        "total": 2.5
+      },
+      {
+        "id": "2",
+        "name": "Bread",
+        "price": 3,
+        "quantity": 1,
+        "total": 3
+      }
+    ],
+    "subtotal": 5.5,
+    "total": 5.5,
+    "cashAmount": 10,
+    "change": 4.5,
+    "paymentMethod": "cash",
+    "processedBy": "o***r@grocery.com",
+    "userRole": "owner",
+    "ipAddress": "::1",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/139.0.0.0 Safari/537.36"
   }
 ]
